@@ -2141,57 +2141,82 @@ function removeRoom(roomId) {
   });
 }
 
+/**
+ * โหลดรายชื่อผู้ใช้งานทั้งหมด แสดงป้ายสถานะ และปุ่ม อนุมัติ / ปฏิเสธ สำหรับบัญชีรออนุมัติ
+ */
 function loadAdminUsers() {
   callGas('getUsersList', STATE.token)
     .then(function(res) {
       var list = res.data || [];
       window._adminUsersCache = list;
 
-      var pendingCount = list.filter(function(x) { return String(x.Status).trim() === 'รออนุมัติ'; }).length;
-      updateAdminPendingBadge(pendingCount);
+      // อัปเดตตัวเลข Badge แจ้งเตือนสมาชิกใหม่บนเมนูจัดการระบบ
+      var pendingCount = list.filter(function(x) {
+        return String(x.Status || '').trim() === 'รออนุมัติ';
+      }).length;
+      if (typeof updateAdminPendingBadge === 'function') {
+        updateAdminPendingBadge(pendingCount);
+      }
 
       var tbody = document.getElementById('adminUsersBody');
       if (!tbody) return;
 
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:16px;">ไม่พบข้อมูลผู้ใช้งาน</td></tr>';
+        return;
+      }
+
       var html = '';
       list.forEach(function(u) {
-        var isPending = (String(u.Status).trim() === 'รออนุมัติ');
-        var statusBadgeHtml = isPending
-          ? '<span class="badge badge-pending">รออนุมัติ</span>'
-          : '<span class="badge badge-completed">' + escapeHtml(u.Status) + '</span>';
+        var st = String(u.Status || '').trim();
+        var isPending = (st === 'รออนุมัติ');
 
-        var approveBtn = isPending
-          ? '<button class="btn btn-success btn-sm" onclick="approveUserAccount(\'' + escapeHtml(u.Email) + '\')"><i class="bi bi-check-lg"></i> อนุมัติบัญชี</button> '
+        var badgeCls = 'badge-completed';
+        if (st === 'รออนุมัติ') badgeCls = 'badge-pending';
+        else if (st === 'ไม่อนุมัติ') badgeCls = 'badge-rejected';
+        else if (st === 'Inactive') badgeCls = 'badge-cancelled';
+        else if (st === 'Active') badgeCls = 'badge-approved';
+
+        var statusBadgeHtml = '<span class="badge ' + badgeCls + '">' + escapeHtml(st) + '</span>';
+
+        var actionPendingBtns = isPending
+          ? '<button class="btn btn-success btn-sm" onclick="approveUserAccount(\'' + escapeHtml(u.Email) + '\')" title="อนุมัติและส่งอีเมลแจ้ง"><i class="bi bi-check-lg"></i> อนุมัติ</button> ' +
+            '<button class="btn btn-danger btn-sm" onclick="rejectUserAccount(\'' + escapeHtml(u.Email) + '\')" title="ปฏิเสธและส่งอีเมลแจ้ง"><i class="bi bi-x-lg"></i> ปฏิเสธ</button> '
           : '';
 
         html += '<tr>' +
           '<td>' + escapeHtml(u.Email) + '</td>' +
           '<td>' + escapeHtml(u.Name) + '</td>' +
-          '<td>' + escapeHtml(u.Department) + '</td>' +
-          '<td><span class="badge badge-approved">' + escapeHtml(u.Role) + '</span></td>' +
+          '<td>' + escapeHtml(u.Department || '-') + '</td>' +
+          '<td><span class="badge badge-completed">' + escapeHtml(u.Role) + '</span></td>' +
           '<td>' + statusBadgeHtml + '</td>' +
           '<td style="white-space:nowrap;">' +
-          approveBtn +
-          '<button class="btn btn-outline btn-sm" onclick="openUserModal(\'' + escapeHtml(u.Email) + '\')"><i class="bi bi-pencil"></i></button> ' +
-          '<button class="btn btn-danger btn-sm" onclick="removeUser(\'' + escapeHtml(u.Email) + '\')"><i class="bi bi-trash"></i></button>' +
+            actionPendingBtns +
+            '<button class="btn btn-outline btn-sm" onclick="openUserModal(\'' + escapeHtml(u.Email) + '\')" title="แก้ไข"><i class="bi bi-pencil"></i></button> ' +
+            '<button class="btn btn-danger btn-sm" onclick="removeUser(\'' + escapeHtml(u.Email) + '\')" title="ลบ"><i class="bi bi-trash"></i></button>' +
           '</td>' +
           '</tr>';
       });
       tbody.innerHTML = html;
     })
-    .catch(function(err) { showToast(err.message, 'error'); });
+    .catch(function(err) {
+      showToast(err.message, 'error');
+    });
 }
 
+/**
+ * กดอนุมัติบัญชีผู้ใช้งานใหม่ (เปิดสิทธิ์ Active + ส่งอีเมลต้อนรับ)
+ */
 function approveUserAccount(email) {
-  setLoading(true, 'กำลังอนุมัติบัญชีผู้ใช้งาน...');
-  callGas('updateUserStatus', STATE.token, email, 'Active')
-    .then(function() {
+  setLoading(true, 'กำลังอนุมัติบัญชีและส่งอีเมลแจ้งเตือน...');
+  callGas('updateUserStatus', STATE.token, email, 'Active', '')
+    .then(function(res) {
       Swal.fire({
         icon: 'success',
-        title: 'อนุมัติบัญชีสำเร็จ',
-        text: 'ผู้ใช้นี้สามารถเข้าสู่ระบบได้แล้ว',
+        title: 'อนุมัติบัญชีสำเร็จ!',
+        text: res.message || 'เปิดใช้งานบัญชีและส่งอีเมลแจ้งผู้สมัครเรียบร้อยแล้ว',
         confirmButtonColor: '#0f4c81',
-        timer: 2000,
+        timer: 2200,
         timerProgressBar: true
       });
       loadAdminUsers();
@@ -2199,7 +2224,49 @@ function approveUserAccount(email) {
     .catch(function(err) {
       Swal.fire({ icon: 'error', title: 'ไม่สามารถอนุมัติได้', text: err.message, confirmButtonColor: '#0f4c81' });
     })
-    .finally(function() { setLoading(false); });
+    .finally(function() {
+      setLoading(false);
+    });
+}
+
+/**
+ * กดปฏิเสธบัญชีผู้ใช้งานใหม่ (กรอกเหตุผลได้ + ส่งอีเมลแจ้งผล)
+ */
+function rejectUserAccount(email) {
+  Swal.fire({
+    title: 'ปฏิเสธคำขอลงทะเบียนบัญชี?',
+    text: 'อีเมล: ' + email,
+    input: 'textarea',
+    inputPlaceholder: 'ระบุเหตุผลที่ไม่อนุมัติ (จะส่งแจ้งทางอีเมลผู้สมัคร - ไม่บังคับ)...',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'ยืนยันปฏิเสธและส่งอีเมล',
+    cancelButtonText: 'ยกเลิก'
+  }).then(function(result) {
+    if (result.isConfirmed) {
+      setLoading(true, 'กำลังบันทึกและส่งอีเมลแจ้งผล...');
+      callGas('updateUserStatus', STATE.token, email, 'ไม่อนุมัติ', result.value || '')
+        .then(function(res) {
+          Swal.fire({
+            icon: 'success',
+            title: 'ดำเนินการเรียบร้อย',
+            text: res.message || 'บันทึกสถานะไม่อนุมัติและส่งอีเมลแจ้งผลแล้ว',
+            confirmButtonColor: '#0f4c81',
+            timer: 2200,
+            timerProgressBar: true
+          });
+          loadAdminUsers();
+        })
+        .catch(function(err) {
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message, confirmButtonColor: '#0f4c81' });
+        })
+        .finally(function() {
+          setLoading(false);
+        });
+    }
+  });
 }
 
 function openUserModal(email) {
