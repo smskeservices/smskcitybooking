@@ -905,6 +905,28 @@ function extractCleanTime(val, defaultTime) {
       document.getElementById('setCloseHour').value = s.CLOSE_HOUR || '20:00';
     });
   }
+function callGas(fnName) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    var payload = {
+      action: fnName,
+      token: STATE.token || '',
+      payload: args // ส่งเป็น Array เสมอ เช่น ["email@domain.com", "123456"]
+    };
+
+    return fetch(GAS_API_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(res) {
+      if (res && res.success === false && res.code !== 'CONFLICT') {
+        throw new Error(res.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์');
+      }
+      return res;
+    });
+  }
   function submitAdminSettings(e) {
     e.preventDefault();
     callGas('saveAdminSettings', STATE.token, {
