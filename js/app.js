@@ -105,7 +105,6 @@ function callGas(fnName) {
   } else if (fnName === 'updateUserStatus') {
   reqToken = args[0] || STATE.token;
   reqPayload = { email: args[1], newStatus: args[2], reason: args[3] || '' };
-}
   } else if (fnName === 'getAuditLogs') {
     reqToken = args[0] || STATE.token;
     reqPayload = { limit: args[1] || 100 };
