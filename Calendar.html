@@ -1,0 +1,18 @@
+<!-- View: Calendar -->
+<section class="app-view" id="view-calendar">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-calendar3"></i> ปฏิทินการใช้ห้องประชุม</div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <select id="calendarRoomFilter" style="width:auto;" onchange="loadCalendarEvents()">
+          <option value="">แสดงทุกห้องประชุม</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadCalendarEvents()">
+          <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+        </button>
+      </div>
+    </div>
+    <div class="legend-wrap" id="calendarLegend"></div>
+    <div id="fullCalendarEl"></div>
+  </div>
+</section>
