@@ -17,8 +17,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
-  <!-- Stylesheet -->
-  <?!= include('CSS'); ?>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <!-- Overlay สำหรับเมนูด้านข้างบนหน้าจอมือถือ -->
@@ -42,12 +42,10 @@
         <button class="nav-item" data-view="booking" onclick="navigateTo('booking')">
           <i class="bi bi-calendar-plus"></i><span>จองห้องประชุม</span>
         </button>
-        <!-- เมนูอนุมัติ (เฉพาะ Admin / Approver) -->
         <button class="nav-item approver-nav-item" id="navApprovalBtn" data-view="approval" onclick="navigateTo('approval')" style="display:none;">
           <i class="bi bi-check2-square"></i><span>อนุมัติการจอง</span>
           <span class="menu-badge-count" id="sidebarPendingBadge" style="display:none;">0</span>
         </button>
-        <!-- ตารางการใช้ห้องประชุม (ซ่อนสำหรับ Guest) -->
         <button class="nav-item auth-required-nav" data-view="calendar" onclick="navigateTo('calendar')" style="display:none;">
           <i class="bi bi-calendar3"></i><span>ตารางการใช้ห้อง</span>
         </button>
@@ -57,7 +55,6 @@
         <button class="nav-item auth-required-nav" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;">
           <i class="bi bi-journal-check"></i><span>รายการจองของฉัน</span>
         </button>
-        <!-- สถิติ & ค้นหา (ซ่อนสำหรับ Guest) -->
         <button class="nav-item auth-required-nav" data-view="stats" onclick="navigateTo('stats')" style="display:none;">
           <i class="bi bi-bar-chart-line"></i><span>สถิติ &amp; ค้นหา</span>
         </button>
@@ -67,7 +64,6 @@
         </button>
       </nav>
 
-      <!-- การ์ดแสดงข้อมูลผู้ใช้งานด้านล่าง Sidebar (คลิกเพื่อแก้ไขโปรไฟล์หรือกดออกจากระบบ) -->
       <div class="sidebar-user-box" id="sidebarUserBox" style="display:none;">
         <div class="sidebar-user-avatar" id="sidebarUserAvatar">บ</div>
         <div class="sidebar-user-info" onclick="openProfileModal()" style="cursor:pointer;" title="คลิกเพื่อแก้ไขข้อมูลโปรไฟล์">
@@ -96,7 +92,6 @@
         </div>
 
         <div class="topbar-right">
-          <!-- ผู้ใช้ที่เข้าสู่ระบบแล้ว (คลิกเปิด Modal แก้ไขโปรไฟล์และเบอร์โทรได้) -->
           <div class="user-pill" id="headerUserBox" style="display:none; cursor:pointer;" onclick="openProfileModal()" title="คลิกเพื่อดู/แก้ไขข้อมูลโปรไฟล์ส่วนตัว">
             <div class="user-avatar-mini" id="headerUserAvatar">บ</div>
             <div class="user-meta-wrap">
@@ -109,172 +104,594 @@
             </button>
           </div>
 
-          <!-- ปุ่มเข้าสู่ระบบสำหรับ Guest -->
           <button class="btn btn-primary btn-sm" id="authActionBtn" onclick="openLoginModal()">
             <i class="bi bi-person-circle"></i> <span>เข้าสู่ระบบ</span>
           </button>
         </div>
       </header>
 
-      <!-- ส่วนเนื้อหาหลักแต่ละหน้า -->
+      <!-- ส่วนเนื้อหาหลักแต่ละหน้า (SPA Views) -->
       <main class="content-area">
-        <?!= include('Dashboard'); ?>
-        <?!= include('BookingView'); ?>
-        <?!= include('Calendar'); ?>
-        <?!= include('AdminView'); ?>
-        <?!= include('ApprovalView'); ?>
+        <!-- Dashboard View -->
+        <section class="app-view active" id="view-dashboard">
+          <div class="card" style="background:var(--gradient); color:#fff; border:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <h2 style="font-size:21px; font-weight:700;">ระบบจองห้องประชุมออนไลน์ เทศบาลเมืองสมุทรสงคราม</h2>
+                <p style="opacity:0.9; font-size:14px;">ตรวจสอบตารางห้องประชุมแบบ Real-time จองห้อง และติดตามสถานะอนุมัติได้ทุกที่</p>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-light" onclick="navigateTo('calendar')"><i class="bi bi-calendar3"></i> ดูปฏิทิน</button>
+                <button class="btn" style="background:#fff; color:var(--primary);" onclick="navigateTo('booking')">
+                  <i class="bi bi-plus-circle"></i> จองห้องประชุมทันที
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-kpi" id="dashboardKpis">
+            <div class="kpi-card">
+              <div><div class="kpi-label">ห้องประชุมทั้งหมด</div><div class="kpi-value" id="kpiTotalRooms">-</div></div>
+              <div class="kpi-icon"><i class="bi bi-building"></i></div>
+            </div>
+            <div class="kpi-card green">
+              <div><div class="kpi-label">ห้องว่างวันนี้</div><div class="kpi-value" id="kpiAvailToday">-</div></div>
+              <div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-check-circle"></i></div>
+            </div>
+            <div class="kpi-card teal">
+              <div><div class="kpi-label">ห้องที่ถูกจองวันนี้</div><div class="kpi-value" id="kpiBookedToday">-</div></div>
+              <div class="kpi-icon" style="background:#ccfbf1; color:#0f766e;"><i class="bi bi-calendar-event"></i></div>
+            </div>
+            <div class="kpi-card">
+              <div><div class="kpi-label">การจองทั้งหมด</div><div class="kpi-value" id="kpiTotalBookings">-</div></div>
+              <div class="kpi-icon"><i class="bi bi-journal-text"></i></div>
+            </div>
+            <div class="kpi-card amber">
+              <div><div class="kpi-label">รออนุมัติ</div><div class="kpi-value" id="kpiPending">-</div></div>
+              <div class="kpi-icon" style="background:#fef3c7; color:#b45309;"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+            <div class="kpi-card green">
+              <div><div class="kpi-label">อนุมัติแล้ว</div><div class="kpi-value" id="kpiApproved">-</div></div>
+              <div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-patch-check"></i></div>
+            </div>
+            <div class="kpi-card red">
+              <div><div class="kpi-label">ยกเลิก</div><div class="kpi-value" id="kpiCancelled">-</div></div>
+              <div class="kpi-icon" style="background:#fee2e2; color:#b91c1c;"><i class="bi bi-x-circle"></i></div>
+            </div>
+            <div class="kpi-card teal">
+              <div>
+                <div class="kpi-label">ห้องที่ใช้บ่อยที่สุด</div>
+                <div class="kpi-value" style="font-size:17px;" id="kpiMostUsed">-</div>
+                <div class="kpi-sub" id="kpiMostUsedSub"></div>
+              </div>
+              <div class="kpi-icon" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-trophy"></i></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><i class="bi bi-bar-chart"></i> สถิติการใช้งานแยกตามห้องประชุม</div>
+              </div>
+              <canvas id="chartByRoom" height="190"></canvas>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><i class="bi bi-graph-up"></i> แนวโน้มการจองรายเดือน</div>
+              </div>
+              <canvas id="chartByMonth" height="190"></canvas>
+            </div>
+          </div>
+
+          <div class="card" id="dashPendingCardContainer" style="display:none;">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-clock-history"></i> รายการจองล่าสุดที่รออนุมัติ</div>
+              <button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>รหัส</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>ดูรายละเอียด</th>
+                  </tr>
+                </thead>
+                <tbody id="dashPendingBody">
+                  <tr><td colspan="7" style="text-align:center; color:var(--muted);">กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Booking View -->
+        <section class="app-view" id="view-booking">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-calendar2-check"></i> 1. ตรวจสอบสถานะห้องว่างอัตโนมัติประจำวัน</div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <label for="availCheckDate" style="margin:0; font-size:14px; font-weight:600;">วันที่ใช้งาน:</label>
+                <input type="date" id="availCheckDate" style="width:auto; font-weight:600;" onchange="onBookingDateChanged()">
+              </div>
+            </div>
+            <div class="avail-list" id="roomAvailCards">
+              <div style="color:var(--muted); padding:10px 0;">กำลังโหลดสถานะห้องประชุม...</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-pencil-square"></i> 2. กรอกข้อมูลการจองและกำหนดรูปแบบห้องประชุม</div>
+            </div>
+
+            <form id="bookingForm" onsubmit="submitBookingForm(event)">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>ชื่อผู้จอง <span class="req">*</span></label>
+                  <input type="text" id="bkName" required placeholder="เช่น นายสมชาย ใจดี">
+                </div>
+                <div class="form-group">
+                  <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
+                  <select id="bkDept" required></select>
+                </div>
+                <div class="form-group">
+                  <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ <span class="req">*</span></label>
+                  <input type="tel" id="bkPhone" required placeholder="เช่น 081-234-5678">
+                </div>
+                <div class="form-group">
+                  <label>อีเมลผู้ใช้งาน <span class="req">*</span></label>
+                  <input type="email" id="bkEmail" required placeholder="name@samutsongkhram.go.th">
+                </div>
+
+                <div class="form-group">
+                  <label>ห้องประชุมที่ต้องการจอง <span class="req">*</span></label>
+                  <select id="bkRoomId" required onchange="syncSelectedRoomCard(); triggerAutoCheckAvailability();"></select>
+                </div>
+                <div class="form-group">
+                  <label>วันที่ใช้งาน <span class="req">*</span></label>
+                  <input type="date" id="bkDate" required onchange="syncDateFromForm(); triggerAutoCheckAvailability();">
+                </div>
+
+                <div class="form-group full" style="background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:14px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                    <label style="margin:0; font-size:14px;"><i class="bi bi-clock-history"></i> กำหนดช่วงเวลาการใช้งานห้องประชุม <span class="req">*</span></label>
+                    <div id="bookingDurationText" class="duration-badge"><i class="bi bi-hourglass-split"></i> รวม 3 ชม. 30 นาที</div>
+                  </div>
+
+                  <div class="time-preset-wrap">
+                    <button type="button" class="time-preset-btn active" onclick="applyTimePreset('08:30', '12:00', this)"><i class="bi bi-sun"></i> เช้า (08:30 - 12:00)</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimePreset('13:00', '16:30', this)"><i class="bi bi-brightness-high"></i> บ่าย (13:00 - 16:30)</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimePreset('08:30', '16:30', this)"><i class="bi bi-calendar-range"></i> เต็มวัน (08:30 - 16:30)</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimeDuration(60, this)"><i class="bi bi-stopwatch"></i> 1 ชม.</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimeDuration(120, this)"><i class="bi bi-stopwatch"></i> 2 ชม.</button>
+                  </div>
+
+                  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div>
+                      <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาเริ่มต้น</small>
+                      <select id="bkStart" required onchange="onStartTimeChanged(); triggerAutoCheckAvailability();"></select>
+                    </div>
+                    <div>
+                      <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาสิ้นสุด</small>
+                      <select id="bkEnd" required onchange="onEndTimeChanged(); triggerAutoCheckAvailability();"></select>
+                    </div>
+                  </div>
+                  <div id="liveAvailStatusBox"></div>
+                </div>
+
+                <div class="form-group full">
+                  <label>หัวข้อการประชุม / กิจกรรม <span class="req">*</span></label>
+                  <input type="text" id="bkTopic" required placeholder="ระบุหัวข้อหรือชื่อการประชุม">
+                </div>
+
+                <div class="form-group">
+                  <label>จำนวนผู้เข้าร่วม (คน) <span class="req">*</span></label>
+                  <input type="number" id="bkParticipants" required min="1" value="10">
+                </div>
+                <div class="form-group">
+                  <label>รูปแบบการประชุม <span class="req">*</span></label>
+                  <select id="bkMeetingType" required onchange="onMeetingTypeChanged()">
+                    <option value="On-site">On-site (ประชุม ณ ห้องประชุม)</option>
+                    <option value="Online">Online (ประชุมออนไลน์)</option>
+                    <option value="Hybrid">Hybrid (ผสมผสาน On-site + Online)</option>
+                  </select>
+                </div>
+
+                <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:14px; margin-top:6px;">
+                  <label style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="bi bi-grid-3x3-gap"></i> รูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม <span class="req">*</span></span>
+                    <span style="font-size:12px; color:var(--muted); font-weight:normal;">(คลิกเลือกการ์ด หรือสลับดูแผนผัง/ภาพจริงได้)</span>
+                  </label>
+                  <input type="hidden" id="bkSeatingLayout" required value="แบบชั้นเรียน (Classroom)">
+                  <div class="layout-grid" id="bookingLayoutGrid"></div>
+                </div>
+
+                <div class="form-group full" style="margin-top:6px;">
+                  <label>อุปกรณ์ที่ต้องการเพิ่มเติม</label>
+                  <input type="text" id="bkEquipment" placeholder="เช่น ไมโครโฟนตั้งโต๊ะ 6 ตัว, สายต่อ HDMI">
+                </div>
+                <div class="form-group full">
+                  <label>รายละเอียดเพิ่มเติม / ข้อความถึงผู้ดูแล</label>
+                  <textarea id="bkDetail" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+                </div>
+              </div>
+
+              <div id="availabilityCheckBox"></div>
+
+              <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;">
+                <button type="submit" class="btn btn-primary" id="btnSubmitBooking" style="padding:11px 24px;">
+                  <i class="bi bi-check2-circle"></i> ยืนยันการจองห้องประชุม
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Approval View -->
+        <section class="app-view" id="view-approval">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-check2-square"></i> รายการรออนุมัติการใช้ห้องประชุม</div>
+              <button class="btn btn-outline btn-sm" onclick="loadApprovalViewData()"><i class="bi bi-arrow-clockwise"></i> รีเฟรชข้อมูล</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>จำนวน</th><th>ดำเนินการพิจารณา</th>
+                  </tr>
+                </thead>
+                <tbody id="standaloneApprovalBody">
+                  <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">กำลังโหลดรายการรออนุมัติ...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Calendar View -->
+        <section class="app-view" id="view-calendar">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-calendar3"></i> ปฏิทินการใช้ห้องประชุม</div>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select id="calendarRoomFilter" style="width:auto;" onchange="loadCalendarEvents()">
+                  <option value="">แสดงทุกห้องประชุม</option>
+                </select>
+                <button class="btn btn-outline btn-sm" onclick="loadCalendarEvents()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+              </div>
+            </div>
+            <div class="legend-wrap" id="calendarLegend"></div>
+            <div id="fullCalendarEl"></div>
+          </div>
+        </section>
+
+        <!-- Rooms Directory View -->
+        <section class="app-view" id="view-rooms">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-door-open"></i> ข้อมูลห้องประชุมทั้งหมด เทศบาลเมืองสมุทรสงคราม</div>
+            </div>
+            <div class="grid-3" id="roomsDirectoryGrid">
+              <div style="color:var(--muted); padding:10px 0;">กำลังโหลดข้อมูลห้องประชุม...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- My Bookings View -->
+        <section class="app-view" id="view-mybookings">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-journal-check"></i> รายการจองของฉัน</div>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input type="email" id="myBookingEmailInput" placeholder="ระบุอีเมลเพื่อค้นหา (กรณีไม่ได้เข้าสู่ระบบ)" style="width:260px;">
+                <button class="btn btn-primary btn-sm" onclick="loadMyBookings()"><i class="bi bi-search"></i> ค้นหารายการจอง</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>สถานะ</th><th>ดำเนินการ</th>
+                  </tr>
+                </thead>
+                <tbody id="myBookingsBody">
+                  <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:16px;">กรุณาเข้าสู่ระบบ หรือกรอกอีเมลเพื่อดูรายการจองของคุณ</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stats & Search View -->
+        <section class="app-view" id="view-stats">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-search"></i> ค้นหารายการจองห้องประชุมทั้งหมด</div>
+            </div>
+            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom:14px;">
+              <div class="form-group">
+                <label>คำค้นหา (รหัส / ผู้จอง / หัวข้อ)</label>
+                <input type="text" id="searchQuery" placeholder="เช่น BK-..., สมชาย...">
+              </div>
+              <div class="form-group">
+                <label>ห้องประชุม</label>
+                <select id="searchRoom"><option value="">ทั้งหมด</option></select>
+              </div>
+              <div class="form-group">
+                <label>วันที่ใช้งาน</label>
+                <input type="date" id="searchDate">
+              </div>
+              <div class="form-group">
+                <label>สถานะ</label>
+                <select id="searchStatus">
+                  <option value="">ทั้งหมด</option>
+                  <option value="รออนุมัติ">รออนุมัติ</option>
+                  <option value="อนุมัติ">อนุมัติ</option>
+                  <option value="ไม่อนุมัติ">ไม่อนุมัติ</option>
+                  <option value="ยกเลิก">ยกเลิก</option>
+                  <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:14px;">
+              <button class="btn btn-primary" onclick="runBookingSearch()"><i class="bi bi-search"></i> ค้นหา</button>
+              <button class="btn btn-light" onclick="resetBookingSearch()"><i class="bi bi-eraser"></i> ล้างตัวกรอง</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>รหัสจอง</th><th>วันที่</th><th>เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="searchResultBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-pie-chart"></i> สัดส่วนสถานะการจองทั้งหมด</div>
+            </div>
+            <div style="max-width:420px; margin:0 auto;"><canvas id="chartByStatus" height="220"></canvas></div>
+          </div>
+        </section>
+
+        <!-- Admin Management View -->
+        <section class="app-view" id="view-admin">
+          <div class="card">
+            <div class="tabs">
+              <button class="tab-btn active" onclick="switchAdminTab('approval', this)"><i class="bi bi-check2-square"></i> อนุมัติการจอง</button>
+              <button class="tab-btn" onclick="switchAdminTab('allbookings', this)"><i class="bi bi-list-check"></i> จัดการการจองทั้งหมด</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('rooms', this)"><i class="bi bi-building-gear"></i> จัดการห้องประชุม &amp; ผังโต๊ะ</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('users', this)"><i class="bi bi-people"></i> ผู้ใช้งาน &amp; สิทธิ์</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('settings', this)"><i class="bi bi-gear"></i> ตั้งค่าระบบ</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('audit', this)"><i class="bi bi-shield-check"></i> Audit Log</button>
+            </div>
+
+            <div class="tab-panel active" id="admin-tab-approval">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / กอง</th><th>จำนวน</th><th>ดำเนินการ</th></tr>
+                  </thead>
+                  <tbody id="adminApprovalBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="admin-tab-allbookings">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง</th><th>สถานะ</th><th>เปลี่ยนสถานะ</th></tr>
+                  </thead>
+                  <tbody id="adminAllBookingsBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="admin-tab-rooms">
+              <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+                <button class="btn btn-primary btn-sm" onclick="openRoomModal()"><i class="bi bi-plus-lg"></i> เพิ่มห้องประชุมใหม่</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>รูป</th><th>รหัส</th><th>ชื่อห้องประชุม</th><th>อาคาร / ชั้น</th><th>ความจุ</th><th>สถานะ</th><th>จัดการ</th></tr>
+                  </thead>
+                  <tbody id="adminRoomsBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="admin-tab-users">
+              <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+                <button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้งาน</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>อีเมล</th><th>ชื่อ-นามสกุล</th><th>หน่วยงาน (กอง/สำนัก)</th><th>สิทธิ์</th><th>สถานะบัญชี</th><th>จัดการ</th></tr>
+                  </thead>
+                  <tbody id="adminUsersBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="admin-tab-settings">
+              <form id="adminSettingsForm" onsubmit="submitAdminSettings(event)" class="form-grid" style="max-width:720px;">
+                <div class="form-group full"><label>ชื่อหน่วยงาน</label><input type="text" id="setOrgName" required></div>
+                <div class="form-group"><label>เวลาเปิดให้จอง</label><input type="time" id="setOpenHour" required></div>
+                <div class="form-group"><label>เวลาปิดให้จอง</label><input type="time" id="setCloseHour" required></div>
+                <div class="form-group"><label>ระบบอนุมัติก่อนใช้งาน</label><select id="setRequireApproval"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
+                <div class="form-group"><label>ซิงค์ Google Calendar อัตโนมัติ</label><select id="setCalendarSync"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
+                <div class="form-group"><label>แจ้งเตือน Google Chat Webhook</label><select id="setChatNotify"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
+                <div class="form-group"><label>แจ้งเตือนก่อนประชุม 1 วัน</label><select id="setRemind1D"><option value="TRUE">เปิด</option><option value="FALSE">ปิด</option></select></div>
+                <div class="form-group"><label>แจ้งเตือนก่อนประชุม 2 ชั่วโมง</label><select id="setRemind2H"><option value="TRUE">เปิด</option><option value="FALSE">ปิด</option></select></div>
+                <div class="form-group"><label>แจ้งเตือนก่อนประชุม 30 นาที</label><select id="setRemind30M"><option value="TRUE">เปิด</option><option value="FALSE">ปิด</option></select></div>
+                <div class="form-group full"><button type="submit" class="btn btn-primary" style="width:fit-content;"><i class="bi bi-save"></i> บันทึกการตั้งค่า</button></div>
+              </form>
+            </div>
+
+            <div class="tab-panel" id="admin-tab-audit">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>วันเวลา</th><th>ผู้ดำเนินการ</th><th>สิทธิ์</th><th>กิจกรรม</th><th>เป้าหมาย</th><th>รายละเอียด</th></tr>
+                  </thead>
+                  <tbody id="adminAuditBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation (เมนูด้านล่างบนมือถือ) -->
   <!-- Mobile Bottom Navigation -->
   <nav class="mobile-bottom-nav">
-    <button class="mobile-bottom-btn active" data-view="dashboard" onclick="navigateTo('dashboard')">
-      <i class="bi bi-speedometer2"></i><span>ภาพรวม</span>
-    </button>
-    <button class="mobile-bottom-btn" data-view="rooms" onclick="navigateTo('rooms')">
-      <i class="bi bi-door-open"></i><span>ห้องประชุม</span>
-    </button>
-    <button class="mobile-bottom-btn auth-required-mobile" data-view="calendar" onclick="navigateTo('calendar')" style="display:none;">
-      <i class="bi bi-calendar3"></i><span>ปฏิทิน</span>
-    </button>
-    <button class="mobile-bottom-btn auth-required-mobile" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;">
-      <i class="bi bi-journal-check"></i><span>ของฉัน</span>
-    </button>
+    <button class="mobile-bottom-btn active" data-view="dashboard" onclick="navigateTo('dashboard')"><i class="bi bi-speedometer2"></i><span>ภาพรวม</span></button>
+    <button class="mobile-bottom-btn" data-view="rooms" onclick="navigateTo('rooms')"><i class="bi bi-door-open"></i><span>ห้องประชุม</span></button>
+    <button class="mobile-bottom-btn auth-required-mobile" data-view="calendar" onclick="navigateTo('calendar')" style="display:none;"><i class="bi bi-calendar3"></i><span>ปฏิทิน</span></button>
+    <button class="mobile-bottom-btn auth-required-mobile" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;"><i class="bi bi-journal-check"></i><span>ของฉัน</span></button>
   </nav>
 
   <!-- Login & Register Modal -->
   <div class="modal-backdrop" id="loginModal">
     <div class="modal-box" style="max-width:440px;">
       <div class="modal-header">
-        <h3><i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i> เข้าสู่ระบบบุคลากร</h3>
+        <h3><i class="bi bi-person-badge"></i> เข้าสู่ระบบบุคลากร</h3>
         <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
       </div>
       <div class="modal-body">
         <div class="tabs">
-          <button class="tab-btn active" id="authTabLogin" onclick="switchAuthTab('login')">
-            <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
-          </button>
-          <button class="tab-btn" id="authTabRegister" onclick="switchAuthTab('register')">
-            <i class="bi bi-person-plus"></i> ลงทะเบียนใหม่
-          </button>
+          <button class="tab-btn active" id="authTabLogin" onclick="switchAuthTab('login')">เข้าสู่ระบบ</button>
+          <button class="tab-btn" id="authTabRegister" onclick="switchAuthTab('register')">ลงทะเบียนใหม่</button>
         </div>
-
-        <!-- ฟอร์มเข้าสู่ระบบ -->
         <form id="loginForm" onsubmit="submitLogin(event)">
-          <div class="form-group" style="margin-bottom:12px;">
-            <label>อีเมลผู้ใช้งาน <span class="req">*</span></label>
-            <input type="email" id="loginEmail" required placeholder="name@samutsongkhram.go.th" autocomplete="username">
-          </div>
-          <div class="form-group" style="margin-bottom:14px;">
-            <label>รหัสผ่าน / PIN <span class="req">*</span></label>
-            <input type="password" id="loginPass" required placeholder="กรอกรหัสผ่านหรือ PIN 4-6 หลัก" autocomplete="current-password">
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-            <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal; cursor:pointer;">
-              <input type="checkbox" id="loginRememberMe" checked style="width:auto;"> จดจำการเข้าสู่ระบบ
-            </label>
-          </div>
-          <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width:100%;">
-            <i class="bi bi-box-arrow-in-right"></i> ยืนยันการเข้าสู่ระบบ
-          </button>
+          <div class="form-group" style="margin-bottom:12px;"><label>อีเมลผู้ใช้งาน <span class="req">*</span></label><input type="email" id="loginEmail" required placeholder="name@samutsongkhram.go.th"></div>
+          <div class="form-group" style="margin-bottom:16px;"><label>รหัสผ่าน / PIN <span class="req">*</span></label><input type="password" id="loginPass" required placeholder="กรอกรหัสผ่านหรือ PIN"></div>
+          <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width:100%;"><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</button>
         </form>
-
-        <!-- ฟอร์มลงทะเบียนบุคลากรใหม่ (พร้อมช่องกรอกเบอร์โทรศัพท์) -->
         <form id="registerForm" onsubmit="submitRegister(event)" style="display:none;">
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>ชื่อ-นามสกุล <span class="req">*</span></label>
-            <input type="text" id="regName" required placeholder="เช่น นายสมชาย ใจดี">
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
-            <select id="regDept" required></select>
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ <span class="req">*</span></label>
-            <input type="tel" id="regPhone" required placeholder="เช่น 081-234-5678">
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>อีเมลติดต่อ <span class="req">*</span></label>
-            <input type="email" id="regEmail" required placeholder="name@samutsongkhram.go.th">
-          </div>
-          <div class="form-group" style="margin-bottom:16px;">
-            <label>กำหนดรหัสผ่าน / PIN (อย่างน้อย 4 หลัก) <span class="req">*</span></label>
-            <input type="password" id="regPass" required minlength="4" placeholder="กำหนดรหัสผ่านสำหรับเข้าใช้งาน">
-          </div>
-          <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width:100%;">
-            <i class="bi bi-person-check"></i> สร้างบัญชีและเข้าสู่ระบบ
-          </button>
+          <div class="form-group" style="margin-bottom:10px;"><label>ชื่อ-นามสกุล <span class="req">*</span></label><input type="text" id="regName" required placeholder="นาย/นาง/นางสาว..."></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label><select id="regDept" required></select></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>เบอร์โทรศัพท์ <span class="req">*</span></label><input type="tel" id="regPhone" required placeholder="081-234-5678"></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>อีเมล <span class="req">*</span></label><input type="email" id="regEmail" required placeholder="name@samutsongkhram.go.th"></div>
+          <div class="form-group" style="margin-bottom:16px;"><label>กำหนดรหัส PIN <span class="req">*</span></label><input type="password" id="regPass" required minlength="4" placeholder="อย่างน้อย 4 ตัวอักษร"></div>
+          <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width:100%;"><i class="bi bi-person-plus"></i> ลงทะเบียน</button>
         </form>
       </div>
     </div>
   </div>
 
-  <!-- Modal สำหรับดูและแก้ไขโปรไฟล์ส่วนตัว (ตั้งค่าเบอร์โทรศัพท์เริ่มต้น) -->
+  <!-- Profile Modal -->
   <div class="modal-backdrop" id="profileModal">
     <div class="modal-box" style="max-width:440px;">
       <div class="modal-header">
-        <h3><i class="bi bi-person-lines-fill" style="color:var(--primary);"></i> ข้อมูลโปรไฟล์ส่วนตัว</h3>
+        <h3><i class="bi bi-person-lines-fill"></i> โปรไฟล์ส่วนตัว</h3>
         <button class="modal-close" onclick="closeModal('profileModal')">&times;</button>
       </div>
       <form id="profileForm" onsubmit="submitProfileUpdate(event)">
         <div class="modal-body">
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>อีเมลผู้ใช้งาน</label>
-            <input type="email" id="profEmail" readonly style="background:#f1f5f9; cursor:not-allowed;">
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>ชื่อ-นามสกุล <span class="req">*</span></label>
-            <input type="text" id="profName" required>
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
-            <select id="profDept" required></select>
-          </div>
-          <div class="form-group" style="margin-bottom:12px;">
-            <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ (ใช้เป็นค่าเริ่มต้นในฟอร์มจอง) <span class="req">*</span></label>
-            <input type="tel" id="profPhone" required placeholder="เช่น 081-234-5678">
-          </div>
-          <div class="form-group" style="margin-bottom:6px;">
-            <label>เปลี่ยนรหัสผ่าน / PIN ใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</label>
-            <input type="password" id="profPass" placeholder="ระบุรหัสผ่านใหม่หากต้องการเปลี่ยน">
-          </div>
+          <div class="form-group" style="margin-bottom:10px;"><label>อีเมล</label><input type="email" id="profEmail" readonly style="background:#f1f5f9;"></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>ชื่อ-นามสกุล <span class="req">*</span></label><input type="text" id="profName" required></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>กอง/สำนัก <span class="req">*</span></label><select id="profDept" required></select></div>
+          <div class="form-group" style="margin-bottom:12px;"><label>เบอร์โทรศัพท์ <span class="req">*</span></label><input type="tel" id="profPhone" required></div>
+          <div class="form-group" style="margin-bottom:6px;"><label>เปลี่ยนรหัสผ่านใหม่ (ถ้ามี)</label><input type="password" id="profPass" placeholder="เว้นว่างถ้าไม่เปลี่ยน"></div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" onclick="closeModal('profileModal')">ยกเลิก</button>
-          <button type="submit" class="btn btn-primary" id="btnSaveProfile"><i class="bi bi-save"></i> บันทึกข้อมูล</button>
-        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button></div>
       </form>
     </div>
   </div>
 
-  <!-- Detail + QR Code Modal (รายละเอียดการจอง) -->
+  <!-- Booking Detail Modal -->
   <div class="modal-backdrop" id="detailModal">
     <div class="modal-box">
       <div class="modal-header">
-        <h3><i class="bi bi-qr-code-scan"></i> รายละเอียดการจองห้องประชุม</h3>
+        <h3><i class="bi bi-qr-code-scan"></i> รายละเอียดการจอง</h3>
         <button class="modal-close" onclick="closeModal('detailModal')">&times;</button>
       </div>
       <div class="modal-body" id="detailModalBody"></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light" onclick="closeModal('detailModal')">ปิดหน้าต่าง</button>
-      </div>
+      <div class="modal-footer"><button class="btn btn-light" onclick="closeModal('detailModal')">ปิด</button></div>
     </div>
   </div>
 
-  <!-- Toast Container & Loading Overlay -->
-  <div class="toast-container" id="toastContainer"></div>
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div id="loadingText" style="font-weight:600; color:var(--primary);">กำลังประมวลผล...</div>
+  <!-- Room Modal -->
+  <div class="modal-backdrop" id="roomModal">
+    <div class="modal-box" style="max-width:700px;">
+      <div class="modal-header">
+        <h3 id="roomModalTitle">จัดการห้องประชุม</h3>
+        <button class="modal-close" onclick="closeModal('roomModal')">&times;</button>
+      </div>
+      <form id="roomForm" onsubmit="submitRoomForm(event)">
+        <div class="modal-body">
+          <input type="hidden" id="rmId">
+          <div class="form-grid">
+            <div class="form-group full"><label>ชื่อห้อง <span class="req">*</span></label><input type="text" id="rmName" required></div>
+            <div class="form-group"><label>อาคาร</label><input type="text" id="rmBuilding"></div>
+            <div class="form-group"><label>ชั้น</label><input type="text" id="rmFloor"></div>
+            <div class="form-group"><label>ความจุ <span class="req">*</span></label><input type="number" id="rmCapacity" min="1" required></div>
+            <div class="form-group"><label>สถานะ</label><select id="rmStatus"><option value="พร้อมใช้งาน">พร้อมใช้งาน</option><option value="ปิดปรับปรุง">ปิดปรับปรุง</option></select></div>
+            <div class="form-group"><label>ผู้รับผิดชอบ</label><input type="text" id="rmResponsible"></div>
+            <div class="form-group"><label>สีปฏิทิน</label><input type="color" id="rmColor" value="#0284c7" style="height:42px; padding:4px;"></div>
+            <div class="form-group full"><label>อุปกรณ์</label><input type="text" id="rmEquipment"></div>
+            <div class="form-group full"><label>รายละเอียด</label><textarea id="rmDesc" rows="2"></textarea></div>
+            <div class="form-group full"><label>อัปโหลดรูปภาพ</label><input type="file" id="rmImageFile" accept="image/*" onchange="handleRoomImageSelect(event)"></div>
+            <div class="form-group full"><label>หรือลิงก์รูปภาพ</label><input type="url" id="rmImageUrl" oninput="updateRoomImagePreview(this.value)"></div>
+            <div class="form-group full" id="rmPreviewWrap" style="display:none;"><img id="rmPreviewImg" style="width:100%; max-height:180px; object-fit:cover; border-radius:10px;"></div>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button></div>
+      </form>
+    </div>
   </div>
 
-  <!-- Hidden Fields for Initial Parameters (ปลอดภัยจาก SyntaxError) -->
+  <!-- User Modal -->
+  <div class="modal-backdrop" id="userModal">
+    <div class="modal-box" style="max-width:460px;">
+      <div class="modal-header"><h3>จัดการผู้ใช้งาน</h3><button class="modal-close" onclick="closeModal('userModal')">&times;</button></div>
+      <form id="userForm" onsubmit="submitUserForm(event)">
+        <div class="modal-body">
+          <div class="form-group" style="margin-bottom:10px;"><label>อีเมล <span class="req">*</span></label><input type="email" id="usrEmail" required></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>ชื่อ-นามสกุล <span class="req">*</span></label><input type="text" id="usrName" required></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>หน่วยงาน</label><select id="usrDept"></select></div>
+          <div class="form-grid">
+            <div class="form-group"><label>สิทธิ์</label><select id="usrRole"><option value="User">User</option><option value="Approver">Approver</option><option value="Admin">Admin</option></select></div>
+            <div class="form-group"><label>สถานะ</label><select id="usrStatus"><option value="Active">Active</option><option value="รออนุมัติ">รออนุมัติ</option><option value="Inactive">Inactive</option></select></div>
+          </div>
+          <div class="form-group" style="margin-top:10px;"><label>รหัสผ่านใหม่ (ถ้ามี)</label><input type="password" id="usrPasscode"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Layout Preview Modal -->
+  <div class="modal-backdrop" id="layoutPreviewModal">
+    <div class="modal-box" style="max-width:680px;">
+      <div class="modal-header"><h3 id="layoutPreviewTitle">รูปแบบการจัดห้อง</h3><button class="modal-close" onclick="closeModal('layoutPreviewModal')">&times;</button></div>
+      <div class="modal-body" style="text-align:center;">
+        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:14px;">
+          <button type="button" class="btn btn-primary btn-sm" id="btnShowPhoto" onclick="switchPreviewMode('photo')"><i class="bi bi-camera"></i> ภาพจริง</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btnShowDiagram" onclick="switchPreviewMode('diagram')"><i class="bi bi-diagram-2"></i> แผนผัง</button>
+        </div>
+        <img id="layoutBigImage" style="width:100%; max-height:380px; object-fit:contain; border-radius:10px; background:#0f172a;">
+        <p id="layoutPreviewDesc" style="margin-top:12px; font-size:14px;"></p>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" onclick="closeModal('layoutPreviewModal')">ปิด</button></div>
+    </div>
+  </div>
+
+  <!-- Toast & Loading -->
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div id="loadingText" style="font-weight:600; color:var(--primary);">กำลังประมวลผล...</div></div>
+
   <input type="hidden" id="_boot_page" value="">
   <input type="hidden" id="_boot_bookingId" value="">
 
-  <!-- Client-side JavaScript -->
-  <?!= include('JavaScript'); ?>
+  <!-- Script เชื่อมต่อ Backend API -->
+  <script src="js/app.js"></script>
 </body>
 </html>
