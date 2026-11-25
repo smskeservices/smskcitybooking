@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * app.js - Frontend JavaScript (SPA, Fetch API, SweetAlert2, Seating & Booking)
+ * app.js - Frontend JavaScript (Full-Featured ฉบับสมบูรณ์ 100%)
  * ระบบจองห้องประชุมออนไลน์ เทศบาลเมืองสมุทรสงคราม
  * ============================================================================
  */
@@ -310,6 +310,14 @@
   function timeToMinutes(hhmm) {
     var p = String(hhmm).split(':');
     return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+  function extractCleanTime(val, defaultTime) {
+    var s = String(val || '').trim();
+    var m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) {
+      return ('0' + parseInt(m[1], 10)).slice(-2) + ':' + ('0' + parseInt(m[2], 10)).slice(-2);
+    }
+    return defaultTime || '07:00';
   }
 
   function updateDurationBadge() {
@@ -855,123 +863,4 @@
         return '<tr><td>' + l.Timestamp + '</td><td>' + l.UserEmail + '</td><td>' + l.Role + '</td><td>' + l.Action + '</td><td>' + l.TargetID + '</td><td>' + l.Details + '</td></tr>';
       }).join('');
     });
-  }
-/* ==========================================================================
-   * Seating Layout Selector & Automatic Mapping
-   * ======================================================================== */
-  function renderBookingLayoutCards() {
-    var container = document.getElementById('bookingLayoutGrid');
-    if (!container || !STATE.layouts || STATE.layouts.length === 0) return;
-
-    var currentVal = document.getElementById('bkSeatingLayout').value || 'แบบชั้นเรียน (Classroom)';
-    var html = '';
-
-    STATE.layouts.forEach(function(l) {
-      var isSelected = (l.name === currentVal || l.id === currentVal) ? 'selected' : '';
-      html += '<div class="layout-card ' + isSelected + '" id="layout-card-' + l.id + '" onclick="selectSeatingLayout(\'' + l.id + '\')">' +
-        '<div class="layout-media-wrap">' +
-          '<img id="img-layout-' + l.id + '" src="' + escapeHtml(l.diagramUrl) + '" alt="' + escapeHtml(l.name) + '">' +
-          '<div class="layout-tab-pill" onclick="event.stopPropagation();">' +
-            '<button type="button" class="layout-tab-btn active" id="btn-dia-' + l.id + '" onclick="toggleCardImage(\'' + l.id + '\', \'diagram\')">แผนผัง</button>' +
-            '<button type="button" class="layout-tab-btn" id="btn-pho-' + l.id + '" onclick="toggleCardImage(\'' + l.id + '\', \'photo\')">ภาพจริง</button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="layout-info">' +
-          '<div class="layout-title">' +
-            '<span>' + escapeHtml(l.name) + '</span>' +
-          '</div>' +
-          '<div class="layout-desc">' + escapeHtml(l.desc) + '</div>' +
-          '<button type="button" class="btn-preview-layout" onclick="event.stopPropagation(); openLayoutBigPreview(\'' + l.id + '\')">' +
-            '<i class="bi bi-zoom-in"></i> ขยายดูรูปใหญ่' +
-          '</button>' +
-        '</div>' +
-      '</div>';
-    });
-
-    container.innerHTML = html;
-  }
-
-  function toggleCardImage(layoutId, mode) {
-    var layout = STATE.layouts.find(function(x) { return x.id === layoutId; });
-    if (!layout) return;
-
-    var img = document.getElementById('img-layout-' + layoutId);
-    var btnDia = document.getElementById('btn-dia-' + layoutId);
-    var btnPho = document.getElementById('btn-pho-' + layoutId);
-    if (!img) return;
-
-    if (mode === 'diagram') {
-      img.src = layout.diagramUrl;
-      if (btnDia) btnDia.classList.add('active');
-      if (btnPho) btnPho.classList.remove('active');
-    } else {
-      img.src = layout.photoUrl;
-      if (btnPho) btnPho.classList.add('active');
-      if (btnDia) btnDia.classList.remove('active');
-    }
-  }
-
-  function selectSeatingLayout(layoutId) {
-    var layout = STATE.layouts.find(function(x) { return x.id === layoutId; });
-    if (!layout) return;
-
-    var input = document.getElementById('bkSeatingLayout');
-    if (input) input.value = layout.name;
-
-    var cards = document.querySelectorAll('.layout-card');
-    cards.forEach(function(c) { c.classList.remove('selected'); });
-    var activeCard = document.getElementById('layout-card-' + layoutId);
-    if (activeCard) activeCard.classList.add('selected');
-  }
-
-  function onMeetingTypeChanged() {
-    var typeSelect = document.getElementById('bkMeetingType');
-    if (!typeSelect) return;
-    var meetingType = typeSelect.value;
-
-    var defaultLayoutMap = {
-      'On-site': 'classroom',
-      'Online':  'boardroom',
-      'Hybrid':  'ushape'
-    };
-
-    var targetLayoutId = defaultLayoutMap[meetingType] || 'classroom';
-    selectSeatingLayout(targetLayoutId);
-
-    var layout = STATE.layouts.find(function(x) { return x.id === targetLayoutId; });
-    if (layout) {
-      showToast('แนะนำผังโต๊ะอัตโนมัติ: ' + layout.name, 'info');
-    }
-  }
-
-  function openLayoutBigPreview(layoutId) {
-    var layout = STATE.layouts.find(function(x) { return x.id === layoutId; });
-    if (!layout) return;
-
-    STATE.currentPreviewLayout = layout;
-    var titleEl = document.getElementById('layoutPreviewTitle');
-    var descEl = document.getElementById('layoutPreviewDesc');
-    if (titleEl) titleEl.innerHTML = '<i class="bi bi-grid-3x3-gap"></i> รูปแบบ: ' + escapeHtml(layout.name);
-    if (descEl) descEl.textContent = layout.desc;
-
-    switchPreviewMode('photo');
-    openModal('layoutPreviewModal');
-  }
-
-  function switchPreviewMode(mode) {
-    if (!STATE.currentPreviewLayout) return;
-    var img = document.getElementById('layoutBigImage');
-    var btnDia = document.getElementById('btnShowDiagram');
-    var btnPho = document.getElementById('btnShowPhoto');
-    if (!img) return;
-
-    if (mode === 'diagram') {
-      img.src = STATE.currentPreviewLayout.diagramUrl;
-      if (btnDia) btnDia.className = 'btn btn-primary btn-sm';
-      if (btnPho) btnPho.className = 'btn btn-outline btn-sm';
-    } else {
-      img.src = STATE.currentPreviewLayout.photoUrl;
-      if (btnPho) btnPho.className = 'btn btn-primary btn-sm';
-      if (btnDia) btnDia.className = 'btn btn-outline btn-sm';
-    }
   }
