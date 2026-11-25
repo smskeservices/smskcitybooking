@@ -1803,6 +1803,9 @@ function loadAdminSettings() {
     .then(function(res) {
       var s = res.data || {};
       document.getElementById('setOrgName').value = s.ORG_NAME || '';
+      if (document.getElementById('setFrontendUrl')) {
+        document.getElementById('setFrontendUrl').value = s.FRONTEND_URL || '';
+      }
       document.getElementById('setOpenHour').value = extractCleanTime(s.OPEN_HOUR, '07:00');
       document.getElementById('setCloseHour').value = extractCleanTime(s.CLOSE_HOUR, '20:00');
 
@@ -1813,7 +1816,9 @@ function loadAdminSettings() {
       setSelectValue('setRemind2H', s.REMINDER_2H, 'TRUE');
       setSelectValue('setRemind30M', s.REMINDER_30M, 'TRUE');
     })
-    .catch(function(err) { showToast(err.message, 'error'); });
+    .catch(function(err) {
+      showToast(err.message, 'error');
+    });
 }
 
 function setSelectValue(elementId, val, defaultVal) {
@@ -1837,6 +1842,7 @@ function submitAdminSettings(e) {
   setLoading(true, 'กำลังบันทึกการตั้งค่าระบบ...');
   var payload = {
     ORG_NAME: document.getElementById('setOrgName').value.trim(),
+    FRONTEND_URL: document.getElementById('setFrontendUrl') ? document.getElementById('setFrontendUrl').value.trim() : '',
     OPEN_HOUR: document.getElementById('setOpenHour').value,
     CLOSE_HOUR: document.getElementById('setCloseHour').value,
     REQUIRE_APPROVAL: document.getElementById('setRequireApproval').value,
@@ -1850,25 +1856,37 @@ function submitAdminSettings(e) {
   callGas('saveAdminSettings', STATE.token, payload)
     .then(function() {
       STATE.settings.ORG_NAME = payload.ORG_NAME;
+      STATE.settings.FRONTEND_URL = payload.FRONTEND_URL;
       STATE.settings.OPEN_HOUR = payload.OPEN_HOUR;
       STATE.settings.CLOSE_HOUR = payload.CLOSE_HOUR;
-      document.getElementById('orgNameLabel').textContent = payload.ORG_NAME;
+
+      var orgLabel = document.getElementById('orgNameLabel');
+      if (orgLabel) orgLabel.textContent = payload.ORG_NAME;
 
       updateTimeSlotOptions();
 
       Swal.fire({
         icon: 'success',
         title: 'บันทึกสำเร็จ!',
-        text: 'การตั้งค่าระบบได้รับการบันทึกและมีผลทันที',
+        text: 'การตั้งค่าระบบและ URL เว็บไซต์หลักถูกบันทึกเรียบร้อยแล้ว',
         confirmButtonColor: '#0f4c81',
+        confirmButtonText: 'ตกลง',
         timer: 2000,
         timerProgressBar: true
       });
     })
     .catch(function(err) {
-      Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' });
+      Swal.fire({
+        icon: 'error',
+        title: 'บันทึกไม่สำเร็จ',
+        text: err.message,
+        confirmButtonColor: '#0f4c81',
+        confirmButtonText: 'ตกลง'
+      });
     })
-    .finally(function() { setLoading(false); });
+    .finally(function() {
+      setLoading(false);
+    });
 }
 
 function loadAdminBookings() {
