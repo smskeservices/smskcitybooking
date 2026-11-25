@@ -339,7 +339,11 @@
 
   .swal2-popup { font-family: 'Sarabun', sans-serif !important; border-radius: 16px !important; }
   .swal2-title { font-size: 19px !important; color: var(--primary) !important; }
-
+/* FullCalendar List View & Mobile Responsive */
+  .fc .fc-toolbar { flex-wrap: wrap; gap: 8px; }
+  .fc .fc-list-event { cursor: pointer; }
+  .fc .fc-list-day-cushion { background: #f0f9ff !important; color: var(--primary); font-weight: 700; }
+  .fc .fc-list-event:hover td { background: #f8fafc !important; }
   @media (max-width: 960px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
