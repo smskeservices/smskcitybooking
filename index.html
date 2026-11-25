@@ -360,6 +360,10 @@
             <div class="tab-panel" id="admin-tab-settings">
               <form id="adminSettingsForm" onsubmit="submitAdminSettings(event)" class="form-grid" style="max-width:740px;">
                 <div class="form-group full"><label>ชื่อหน่วยงาน</label><input type="text" id="setOrgName" required></div>
+                <div class="form-group full">
+  <label>URL เว็บไซต์หลัก (GitHub Pages สำหรับลิงก์ใน Email &amp; QR Code)</label>
+  <input type="url" id="setFrontendUrl" placeholder="https://username.github.io/repo-name/">
+</div>
                 <div class="form-group"><label>เวลาเปิดให้จอง</label><input type="time" id="setOpenHour" required></div>
                 <div class="form-group"><label>เวลาปิดให้จอง</label><input type="time" id="setCloseHour" required></div>
                 <div class="form-group"><label>ระบบอนุมัติ (Approval)</label><select id="setRequireApproval"><option value="TRUE">เปิดใช้งาน (ต้องรออนุมัติ)</option><option value="FALSE">ปิดใช้งาน (อนุมัติทันที)</option></select></div>
