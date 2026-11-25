@@ -293,7 +293,7 @@
                   <div id="liveAvailStatusBox"></div>
                 </div>
                 <div class="form-group full"><label>หัวข้อการประชุม / กิจกรรม <span class="req">*</span></label><input type="text" id="bkTopic" required></div>
-                <div class="form-group"><label>จำนวนผู้เข้าร่วม (คน) <span class="req">*</span></label><input type="number" id="bkParticipants" required min="1" value="10"></div>
+                <div class="form-group"><label>จำนวนผู้เข้าร่วม (คน) <span class="req">*</span></label><input type="number" id="bkParticipants" required min="1" placeholder="ระบุจำนวนผู้เข้าร่วม เช่น 10"></div>
                 <div class="form-group"><label>รูปแบบการประชุม <span class="req">*</span></label><select id="bkMeetingType" required onchange="onMeetingTypeChanged()"><option value="On-site">On-site (ประชุม ณ ห้องประชุม)</option><option value="Online">Online (ประชุมออนไลน์)</option><option value="Hybrid">Hybrid (ผสมผสาน On-site + Online)</option></select></div>
                 <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:14px;">
                   <label><i class="bi bi-grid-3x3-gap"></i> รูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม <span class="req">*</span></label>
