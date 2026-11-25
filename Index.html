@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจองห้องประชุมออนไลน์ | เทศบาลเมืองสมุทรสงคราม</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- Stylesheet -->
+  <?!= include('CSS'); ?>
+</head>
+<body>
+  <!-- Overlay สำหรับเมนูด้านข้างบนหน้าจอมือถือ -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
+  <div class="app-shell">
+    <!-- Sidebar (เมนูด้านข้าง) -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="bi bi-building-check"></i></div>
+        <div class="brand-text">
+          <h1>ระบบจองห้องประชุม</h1>
+          <span id="orgNameLabel">เทศบาลเมืองสมุทรสงคราม</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')">
+          <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="booking" onclick="navigateTo('booking')">
+          <i class="bi bi-calendar-plus"></i><span>จองห้องประชุม</span>
+        </button>
+        <!-- เมนูอนุมัติ (เฉพาะ Admin / Approver) -->
+        <button class="nav-item approver-nav-item" id="navApprovalBtn" data-view="approval" onclick="navigateTo('approval')" style="display:none;">
+          <i class="bi bi-check2-square"></i><span>อนุมัติการจอง</span>
+          <span class="menu-badge-count" id="sidebarPendingBadge" style="display:none;">0</span>
+        </button>
+        <!-- ตารางการใช้ห้องประชุม (ซ่อนสำหรับ Guest) -->
+        <button class="nav-item auth-required-nav" data-view="calendar" onclick="navigateTo('calendar')" style="display:none;">
+          <i class="bi bi-calendar3"></i><span>ตารางการใช้ห้อง</span>
+        </button>
+        <button class="nav-item" data-view="rooms" onclick="navigateTo('rooms')">
+          <i class="bi bi-door-open"></i><span>ห้องประชุม</span>
+        </button>
+        <button class="nav-item auth-required-nav" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;">
+          <i class="bi bi-journal-check"></i><span>รายการจองของฉัน</span>
+        </button>
+        <!-- สถิติ & ค้นหา (ซ่อนสำหรับ Guest) -->
+        <button class="nav-item auth-required-nav" data-view="stats" onclick="navigateTo('stats')" style="display:none;">
+          <i class="bi bi-bar-chart-line"></i><span>สถิติ &amp; ค้นหา</span>
+        </button>
+        <button class="nav-item" id="navAdminBtn" data-view="admin" onclick="navigateTo('admin')" style="display:none;">
+          <i class="bi bi-shield-lock"></i><span>จัดการระบบ</span>
+          <span class="menu-badge-count" id="sidebarAdminBadge" style="display:none;">0</span>
+        </button>
+      </nav>
+
+      <!-- การ์ดแสดงข้อมูลผู้ใช้งานด้านล่าง Sidebar (คลิกเพื่อแก้ไขโปรไฟล์หรือกดออกจากระบบ) -->
+      <div class="sidebar-user-box" id="sidebarUserBox" style="display:none;">
+        <div class="sidebar-user-avatar" id="sidebarUserAvatar">บ</div>
+        <div class="sidebar-user-info" onclick="openProfileModal()" style="cursor:pointer;" title="คลิกเพื่อแก้ไขข้อมูลโปรไฟล์">
+          <strong id="sidebarUserName">-</strong>
+          <small id="sidebarUserDept">-</small>
+        </div>
+        <button type="button" class="btn-logout-icon" onclick="handleLogout()" title="ออกจากระบบ">
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div><i class="bi bi-geo-alt"></i> เทศบาลเมืองสมุทรสงคราม</div>
+        <div style="opacity:0.75; margin-top:2px;">Smart Meeting Room v2.0</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="toggleSidebar(true)" aria-label="เปิดเมนู">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="page-title" id="pageTitle">Dashboard ภาพรวมระบบ</div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- ผู้ใช้ที่เข้าสู่ระบบแล้ว (คลิกเปิด Modal แก้ไขโปรไฟล์และเบอร์โทรได้) -->
+          <div class="user-pill" id="headerUserBox" style="display:none; cursor:pointer;" onclick="openProfileModal()" title="คลิกเพื่อดู/แก้ไขข้อมูลโปรไฟล์ส่วนตัว">
+            <div class="user-avatar-mini" id="headerUserAvatar">บ</div>
+            <div class="user-meta-wrap">
+              <span class="user-name-text" id="headerUserName">กำลังโหลด...</span>
+              <span class="user-dept-text" id="headerUserDept">-</span>
+            </div>
+            <span class="role-badge" id="headerUserRole">User</span>
+            <button type="button" class="btn-topbar-logout" onclick="event.stopPropagation(); handleLogout();" title="ออกจากระบบ">
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
+          </div>
+
+          <!-- ปุ่มเข้าสู่ระบบสำหรับ Guest -->
+          <button class="btn btn-primary btn-sm" id="authActionBtn" onclick="openLoginModal()">
+            <i class="bi bi-person-circle"></i> <span>เข้าสู่ระบบ</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ส่วนเนื้อหาหลักแต่ละหน้า -->
+      <main class="content-area">
+        <?!= include('Dashboard'); ?>
+        <?!= include('BookingView'); ?>
+        <?!= include('Calendar'); ?>
+        <?!= include('AdminView'); ?>
+        <?!= include('ApprovalView'); ?>
+      </main>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation (เมนูด้านล่างบนมือถือ) -->
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav">
+    <button class="mobile-bottom-btn active" data-view="dashboard" onclick="navigateTo('dashboard')">
+      <i class="bi bi-speedometer2"></i><span>ภาพรวม</span>
+    </button>
+    <button class="mobile-bottom-btn" data-view="rooms" onclick="navigateTo('rooms')">
+      <i class="bi bi-door-open"></i><span>ห้องประชุม</span>
+    </button>
+    <button class="mobile-bottom-btn auth-required-mobile" data-view="calendar" onclick="navigateTo('calendar')" style="display:none;">
+      <i class="bi bi-calendar3"></i><span>ปฏิทิน</span>
+    </button>
+    <button class="mobile-bottom-btn auth-required-mobile" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;">
+      <i class="bi bi-journal-check"></i><span>ของฉัน</span>
+    </button>
+  </nav>
+
+  <!-- Login & Register Modal -->
+  <div class="modal-backdrop" id="loginModal">
+    <div class="modal-box" style="max-width:440px;">
+      <div class="modal-header">
+        <h3><i class="bi bi-shield-lock-fill" style="color:var(--primary);"></i> เข้าสู่ระบบบุคลากร</h3>
+        <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="tabs">
+          <button class="tab-btn active" id="authTabLogin" onclick="switchAuthTab('login')">
+            <i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ
+          </button>
+          <button class="tab-btn" id="authTabRegister" onclick="switchAuthTab('register')">
+            <i class="bi bi-person-plus"></i> ลงทะเบียนใหม่
+          </button>
+        </div>
+
+        <!-- ฟอร์มเข้าสู่ระบบ -->
+        <form id="loginForm" onsubmit="submitLogin(event)">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>อีเมลผู้ใช้งาน <span class="req">*</span></label>
+            <input type="email" id="loginEmail" required placeholder="name@samutsongkhram.go.th" autocomplete="username">
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>รหัสผ่าน / PIN <span class="req">*</span></label>
+            <input type="password" id="loginPass" required placeholder="กรอกรหัสผ่านหรือ PIN 4-6 หลัก" autocomplete="current-password">
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal; cursor:pointer;">
+              <input type="checkbox" id="loginRememberMe" checked style="width:auto;"> จดจำการเข้าสู่ระบบ
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width:100%;">
+            <i class="bi bi-box-arrow-in-right"></i> ยืนยันการเข้าสู่ระบบ
+          </button>
+        </form>
+
+        <!-- ฟอร์มลงทะเบียนบุคลากรใหม่ (พร้อมช่องกรอกเบอร์โทรศัพท์) -->
+        <form id="registerForm" onsubmit="submitRegister(event)" style="display:none;">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>ชื่อ-นามสกุล <span class="req">*</span></label>
+            <input type="text" id="regName" required placeholder="เช่น นายสมชาย ใจดี">
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
+            <select id="regDept" required></select>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ <span class="req">*</span></label>
+            <input type="tel" id="regPhone" required placeholder="เช่น 081-234-5678">
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>อีเมลติดต่อ <span class="req">*</span></label>
+            <input type="email" id="regEmail" required placeholder="name@samutsongkhram.go.th">
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>กำหนดรหัสผ่าน / PIN (อย่างน้อย 4 หลัก) <span class="req">*</span></label>
+            <input type="password" id="regPass" required minlength="4" placeholder="กำหนดรหัสผ่านสำหรับเข้าใช้งาน">
+          </div>
+          <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width:100%;">
+            <i class="bi bi-person-check"></i> สร้างบัญชีและเข้าสู่ระบบ
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal สำหรับดูและแก้ไขโปรไฟล์ส่วนตัว (ตั้งค่าเบอร์โทรศัพท์เริ่มต้น) -->
+  <div class="modal-backdrop" id="profileModal">
+    <div class="modal-box" style="max-width:440px;">
+      <div class="modal-header">
+        <h3><i class="bi bi-person-lines-fill" style="color:var(--primary);"></i> ข้อมูลโปรไฟล์ส่วนตัว</h3>
+        <button class="modal-close" onclick="closeModal('profileModal')">&times;</button>
+      </div>
+      <form id="profileForm" onsubmit="submitProfileUpdate(event)">
+        <div class="modal-body">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>อีเมลผู้ใช้งาน</label>
+            <input type="email" id="profEmail" readonly style="background:#f1f5f9; cursor:not-allowed;">
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>ชื่อ-นามสกุล <span class="req">*</span></label>
+            <input type="text" id="profName" required>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
+            <select id="profDept" required></select>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ (ใช้เป็นค่าเริ่มต้นในฟอร์มจอง) <span class="req">*</span></label>
+            <input type="tel" id="profPhone" required placeholder="เช่น 081-234-5678">
+          </div>
+          <div class="form-group" style="margin-bottom:6px;">
+            <label>เปลี่ยนรหัสผ่าน / PIN ใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</label>
+            <input type="password" id="profPass" placeholder="ระบุรหัสผ่านใหม่หากต้องการเปลี่ยน">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" onclick="closeModal('profileModal')">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveProfile"><i class="bi bi-save"></i> บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detail + QR Code Modal (รายละเอียดการจอง) -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="bi bi-qr-code-scan"></i> รายละเอียดการจองห้องประชุม</h3>
+        <button class="modal-close" onclick="closeModal('detailModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="detailModalBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" onclick="closeModal('detailModal')">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container & Loading Overlay -->
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div id="loadingText" style="font-weight:600; color:var(--primary);">กำลังประมวลผล...</div>
+  </div>
+
+  <!-- Hidden Fields for Initial Parameters (ปลอดภัยจาก SyntaxError) -->
+  <input type="hidden" id="_boot_page" value="">
+  <input type="hidden" id="_boot_bookingId" value="">
+
+  <!-- Client-side JavaScript -->
+  <?!= include('JavaScript'); ?>
+</body>
+</html>
