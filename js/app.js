@@ -66,6 +66,9 @@ var DEFAULT_LAYOUTS = [
 /* ==========================================================================
  * Fetch API Bridge (เชื่อมต่อ Google Apps Script doPost API)
  * ======================================================================== */
+/**
+ * Fetch API Bridge สำหรับเชื่อมต่อ Google Apps Script doPost API จาก GitHub Pages
+ */
 function callGas(fnName) {
   if (!GAS_API_URL || GAS_API_URL.indexOf('http') !== 0) {
     return Promise.reject(new Error('กรุณากำหนดค่า GAS_API_URL ในไฟล์ js/app.js ก่อนใช้งาน'));
@@ -103,12 +106,13 @@ function callGas(fnName) {
     reqToken = args[0] || STATE.token;
     reqPayload = { email: args[1] };
   } else if (fnName === 'updateUserStatus') {
-  reqToken = args[0] || STATE.token;
-  reqPayload = { email: args[1], newStatus: args[2], reason: args[3] || '' };
+    reqToken = args[0] || STATE.token;
+    reqPayload = { email: args[1], newStatus: args[2], reason: args[3] || '' };
   } else if (fnName === 'getAuditLogs') {
     reqToken = args[0] || STATE.token;
     reqPayload = { limit: args[1] || 100 };
   } else {
+    // getInitialAppData, logoutSession, getDashboardData, getUsersList, getAdminSettings
     reqToken = args[0] || STATE.token;
     reqPayload = {};
   }
