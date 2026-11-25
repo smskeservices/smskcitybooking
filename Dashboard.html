@@ -1,0 +1,149 @@
+<!-- View: Dashboard -->
+<section class="app-view active" id="view-dashboard">
+  <div class="card" style="background:var(--gradient); color:#fff; border:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h2 style="font-size:21px; font-weight:700;">ระบบจองห้องประชุมออนไลน์ เทศบาลเมืองสมุทรสงคราม</h2>
+        <p style="opacity:0.9; font-size:14px;">ตรวจสอบตารางห้องประชุมแบบ Real-time จองห้อง และติดตามสถานะอนุมัติได้ทุกที่</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-light" onclick="navigateTo('calendar')"><i class="bi bi-calendar3"></i> ดูปฏิทิน</button>
+        <button class="btn" style="background:#fff; color:var(--primary);" onclick="navigateTo('booking')">
+          <i class="bi bi-plus-circle"></i> จองห้องประชุมทันที
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-kpi" id="dashboardKpis">
+    <div class="kpi-card">
+      <div><div class="kpi-label">ห้องประชุมทั้งหมด</div><div class="kpi-value" id="kpiTotalRooms">-</div></div>
+      <div class="kpi-icon"><i class="bi bi-building"></i></div>
+    </div>
+    <div class="kpi-card green">
+      <div><div class="kpi-label">ห้องว่างวันนี้</div><div class="kpi-value" id="kpiAvailToday">-</div></div>
+      <div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-check-circle"></i></div>
+    </div>
+    <div class="kpi-card teal">
+      <div><div class="kpi-label">ห้องที่ถูกจองวันนี้</div><div class="kpi-value" id="kpiBookedToday">-</div></div>
+      <div class="kpi-icon" style="background:#ccfbf1; color:#0f766e;"><i class="bi bi-calendar-event"></i></div>
+    </div>
+    <div class="kpi-card">
+      <div><div class="kpi-label">การจองทั้งหมด</div><div class="kpi-value" id="kpiTotalBookings">-</div></div>
+      <div class="kpi-icon"><i class="bi bi-journal-text"></i></div>
+    </div>
+    <div class="kpi-card amber">
+      <div><div class="kpi-label">รออนุมัติ</div><div class="kpi-value" id="kpiPending">-</div></div>
+      <div class="kpi-icon" style="background:#fef3c7; color:#b45309;"><i class="bi bi-hourglass-split"></i></div>
+    </div>
+    <div class="kpi-card green">
+      <div><div class="kpi-label">อนุมัติแล้ว</div><div class="kpi-value" id="kpiApproved">-</div></div>
+      <div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-patch-check"></i></div>
+    </div>
+    <div class="kpi-card red">
+      <div><div class="kpi-label">ยกเลิก</div><div class="kpi-value" id="kpiCancelled">-</div></div>
+      <div class="kpi-icon" style="background:#fee2e2; color:#b91c1c;"><i class="bi bi-x-circle"></i></div>
+    </div>
+    <div class="kpi-card teal">
+      <div>
+        <div class="kpi-label">ห้องที่ใช้บ่อยที่สุด</div>
+        <div class="kpi-value" style="font-size:17px;" id="kpiMostUsed">-</div>
+        <div class="kpi-sub" id="kpiMostUsedSub"></div>
+      </div>
+      <div class="kpi-icon" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-trophy"></i></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-bar-chart"></i> สถิติการใช้งานแยกตามห้องประชุม</div>
+      </div>
+      <canvas id="chartByRoom" height="190"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-graph-up"></i> แนวโน้มการจองรายเดือน</div>
+      </div>
+      <canvas id="chartByMonth" height="190"></canvas>
+    </div>
+  </div>
+
+  <!-- ตารางรายการจองรออนุมัติ (แสดงเฉพาะ Admin / Approver) -->
+  <div class="card" id="dashPendingCardContainer" style="display:none;">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-clock-history"></i> รายการจองล่าสุดที่รออนุมัติ</div>
+      <button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>รหัส</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>ดูรายละเอียด</th>
+          </tr>
+        </thead>
+        <tbody id="dashPendingBody">
+          <tr><td colspan="7" style="text-align:center; color:var(--muted);">กำลังโหลดข้อมูล...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- View: Stats & Search -->
+<section class="app-view" id="view-stats">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-search"></i> ค้นหารายการจองห้องประชุมทั้งหมด</div>
+    </div>
+    <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom:14px;">
+      <div class="form-group">
+        <label>คำค้นหา (รหัส / ผู้จอง / หัวข้อ)</label>
+        <input type="text" id="searchQuery" placeholder="เช่น BK-..., สมชาย...">
+      </div>
+      <div class="form-group">
+        <label>ห้องประชุม</label>
+        <select id="searchRoom"><option value="">ทั้งหมด</option></select>
+      </div>
+      <div class="form-group">
+        <label>วันที่ใช้งาน</label>
+        <input type="date" id="searchDate">
+      </div>
+      <div class="form-group">
+        <label>สถานะ</label>
+        <select id="searchStatus">
+          <option value="">ทั้งหมด</option>
+          <option value="รออนุมัติ">รออนุมัติ</option>
+          <option value="อนุมัติ">อนุมัติ</option>
+          <option value="ไม่อนุมัติ">ไม่อนุมัติ</option>
+          <option value="ยกเลิก">ยกเลิก</option>
+          <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="runBookingSearch()"><i class="bi bi-search"></i> ค้นหา</button>
+      <button class="btn btn-light" onclick="resetBookingSearch()"><i class="bi bi-eraser"></i> ล้างตัวกรอง</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>รหัสจอง</th><th>วันที่</th><th>เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="searchResultBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-pie-chart"></i> สัดส่วนสถานะการจองทั้งหมด</div>
+    </div>
+    <div style="max-width:420px; margin:0 auto;">
+      <canvas id="chartByStatus" height="220"></canvas>
+    </div>
+  </div>
+</section>
