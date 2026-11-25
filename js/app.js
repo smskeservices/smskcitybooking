@@ -311,7 +311,7 @@
     var p = String(hhmm).split(':');
     return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
   }
-  function extractCleanTime(val, defaultTime) {
+function extractCleanTime(val, defaultTime) {
     var s = String(val || '').trim();
     var m = s.match(/(\d{1,2}):(\d{2})/);
     if (m) {
@@ -584,18 +584,74 @@
   }
 
   function submitLogin(e) {
-    e.preventDefault(); setLoading(true, 'ตรวจสอบสิทธิ์...');
-    callGas('loginWithCredentials', document.getElementById('loginEmail').value.trim(), document.getElementById('loginPass').value.trim())
+    e.preventDefault();
+    setLoading(true, 'กำลังตรวจสอบสิทธิ์...');
+    
+    var emailInput = document.getElementById('loginEmail');
+    var passInput = document.getElementById('loginPass');
+    
+    if (!emailInput || !passInput) {
+      setLoading(false);
+      showToast('ไม่พบฟอร์มเข้าสู่ระบบในหน้าจอ', 'error');
+      return;
+    }
+
+    var email = emailInput.value.trim();
+    var pass = passInput.value.trim();
+
+    if (!email || !pass) {
+      setLoading(false);
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        text: 'กรุณากรอกอีเมลและรหัสผ่าน/PIN ให้ครบถ้วน',
+        confirmButtonColor: '#0f4c81'
+      });
+      return;
+    }
+
+    var btn = document.getElementById('btnLoginSubmit');
+    if (btn) btn.disabled = true;
+
+    callGas('loginWithCredentials', email, pass)
       .then(function(res) {
-        STATE.token = res.data.token; sessionStorage.setItem('MRB_AUTH_TOKEN', STATE.token);
-        STATE.user = res.data.user; closeModal('loginModal'); document.getElementById('loginForm').reset(); updateAuthUI();
-        if (['Admin', 'Approver'].indexOf(STATE.user.role) !== -1) {
-          callGas('searchBookings', STATE.token, { status: 'รออนุมัติ' }).then(function(sRes) { updatePendingBadgeCount((sRes.data || []).length); }).catch(function(){});
+        if (!res || !res.success) {
+          throw new Error(res ? res.message : 'เข้าสู่ระบบไม่สำเร็จ');
         }
-        Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ!', text: 'ยินดีต้อนรับ ' + STATE.user.name, timer: 2000, showConfirmButton: false });
+        STATE.token = res.data.token;
+        sessionStorage.setItem('MRB_AUTH_TOKEN', STATE.token);
+
+        STATE.user = res.data.user;
+        closeModal('loginModal');
+        document.getElementById('loginForm').reset();
+        updateAuthUI();
+
+        if (['Admin', 'Approver'].indexOf(STATE.user.role) !== -1) {
+          callGas('searchBookings', STATE.token, { status: 'รออนุมัติ' })
+            .then(function(sRes) { updatePendingBadgeCount((sRes.data || []).length); })
+            .catch(function() {});
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'เข้าสู่ระบบสำเร็จ!',
+          text: 'ยินดีต้อนรับ ' + STATE.user.name,
+          timer: 2000,
+          showConfirmButton: false
+        });
       })
-      .catch(function(err) { Swal.fire({ icon: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', text: err.message }); })
-      .finally(function() { setLoading(false); });
+      .catch(function(err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เข้าสู่ระบบไม่สำเร็จ',
+          text: err.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+          confirmButtonColor: '#0f4c81'
+        });
+      })
+      .finally(function() {
+        if (btn) btn.disabled = false;
+        setLoading(false);
+      });
   }
 
   function submitRegister(e) {
