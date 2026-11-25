@@ -1643,14 +1643,42 @@ function loadCalendarEvents() {
       }
       STATE.calendarInstance = new FullCalendar.Calendar(el, {
         locale: 'th',
-        initialView: window.innerWidth < 640 ? 'timeGridDay' : 'dayGridMonth',
+        initialView: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth',
         height: 'auto',
+        noEventsText: 'ไม่มีรายการจองห้องประชุมในช่วงเวลานี้',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+          right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
         },
-        buttonText: { today: 'วันนี้', month: 'เดือน', week: 'สัปดาห์', day: 'วัน' },
+        buttonText: {
+          today: 'วันนี้',
+          month: 'เดือน',
+          week: 'สัปดาห์',
+          day: 'วัน',
+          listMonth: 'รายการ'
+        },
+        views: {
+          listMonth: {
+            eventContent: function(arg) {
+              var p = arg.event.extendedProps || {};
+              return {
+                html:
+                  '<div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; width:100%;">' +
+                    '<div>' +
+                      '<div style="font-weight:700; color:#0f4c81;">' + escapeHtml(arg.event.title) + '</div>' +
+                      '<div style="font-size:12.5px; color:#64748b; margin-top:2px;">' +
+                        '<i class="bi bi-person"></i> ' + escapeHtml(p.BookerName || '-') +
+                        (p.Department ? ' (' + escapeHtml(p.Department) + ')' : '') +
+                        ' &bull; <i class="bi bi-people"></i> ' + escapeHtml(p.Participants || 0) + ' คน' +
+                      '</div>' +
+                    '</div>' +
+                    '<div>' + statusBadge(p.Status || '') + '</div>' +
+                  '</div>'
+              };
+            }
+          }
+        },
         events: events,
         eventClick: function(info) {
           var p = info.event.extendedProps;
@@ -1661,7 +1689,6 @@ function loadCalendarEvents() {
       });
       STATE.calendarInstance.render();
 
-      // ป้องกันปัญหาปฏิทินไม่ขยายเต็มพื้นที่เมื่อเปลี่ยนแท็บ
       setTimeout(function() {
         if (STATE.calendarInstance) STATE.calendarInstance.updateSize();
       }, 120);
