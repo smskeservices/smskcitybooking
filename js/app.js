@@ -741,32 +741,84 @@ function extractCleanTime(val, defaultTime) {
 
   function submitBookingForm(e) {
     e.preventDefault();
+    var seatingVal = document.getElementById('bkSeatingLayout') ? document.getElementById('bkSeatingLayout').value : 'แบบชั้นเรียน (Classroom)';
+
+    // ปรับแก้การดึง ID ของชื่อผู้จองให้ตรงกับฟอร์ม HTML (ใช้ bkName)
+    var nameInput = document.getElementById('bkName') || document.getElementById('bookerName');
+    var deptInput = document.getElementById('bkDept') || document.getElementById('department');
+    var phoneInput = document.getElementById('bkPhone') || document.getElementById('phone');
+    var emailInput = document.getElementById('bkEmail') || document.getElementById('userEmail');
+
     var payload = {
-      bookerName: document.getElementById('bkName').value.trim(), department: document.getElementById('bkDept').value,
-      phone: document.getElementById('bkPhone').value.trim(), userEmail: document.getElementById('bkEmail').value.trim(),
-      roomId: document.getElementById('bkRoomId').value, date: document.getElementById('bkDate').value,
-      startTime: document.getElementById('bkStart').value, endTime: document.getElementById('bkEnd').value,
-      topic: document.getElementById('bkTopic').value.trim(), participants: Number(document.getElementById('bkParticipants').value),
-      seatingLayout: document.getElementById('bkSeatingLayout').value, meetingType: document.getElementById('bkMeetingType').value,
-      equipment: document.getElementById('bkEquipment').value.trim(), detail: document.getElementById('bkDetail').value.trim()
+      bookerName: nameInput ? nameInput.value.trim() : '',
+      department: deptInput ? deptInput.value : '',
+      phone: phoneInput ? phoneInput.value.trim() : '',
+      userEmail: emailInput ? emailInput.value.trim() : '',
+      roomId: document.getElementById('bkRoomId').value,
+      date: document.getElementById('bkDate').value,
+      startTime: document.getElementById('bkStart').value,
+      endTime: document.getElementById('bkEnd').value,
+      topic: document.getElementById('bkTopic').value.trim(),
+      participants: Number(document.getElementById('bkParticipants').value),
+      seatingLayout: seatingVal,
+      meetingType: document.getElementById('bkMeetingType').value,
+      equipment: document.getElementById('bkEquipment').value.trim(),
+      detail: document.getElementById('bkDetail').value.trim()
     };
 
-    if (timeToMinutes(payload.startTime) >= timeToMinutes(payload.endTime)) {
-      Swal.fire({ icon: 'warning', title: 'เวลาไม่ถูกต้อง', text: 'เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด', confirmButtonColor: '#0f4c81' }); return;
+    if (!payload.bookerName) {
+      Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบถ้วน', text: 'กรุณากรอกชื่อผู้จอง', confirmButtonColor: '#0f4c81' });
+      return;
     }
 
-    setLoading(true, 'กำลังบันทึกการจอง...');
-    callGas('createBooking', STATE.token, payload).then(function(res) {
-      if (!res.success && res.code === 'CONFLICT') {
-        performLiveAvailabilityCheck();
-        Swal.fire({ icon: 'warning', title: 'เวลาทับซ้อนกัน', text: res.message, confirmButtonColor: '#0f4c81' }); return;
-      }
-      Swal.fire({ icon: 'success', title: 'จองห้องประชุมสำเร็จ!', text: 'รหัสการจอง: ' + res.data.booking.BookingID, confirmButtonColor: '#0f4c81' }).then(function() {
-        openBookingDetailModal(res.data.booking.BookingID);
+    if (timeToMinutes(payload.startTime) >= timeToMinutes(payload.endTime)) {
+      Swal.fire({ icon: 'warning', title: 'เวลาไม่ถูกต้อง', text: 'เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด', confirmButtonColor: '#0f4c81' });
+      return;
+    }
+
+    var btn = document.getElementById('btnSubmitBooking');
+    if (btn) btn.disabled = true;
+    setLoading(true, 'กำลังบันทึกการจองห้องประชุม...');
+
+    callGas('createBooking', STATE.token, payload)
+      .then(function(res) {
+        if (!res.success && res.code === 'CONFLICT') {
+          performLiveAvailabilityCheck();
+          Swal.fire({ icon: 'warning', title: 'เวลาทับซ้อนกัน', text: res.message, confirmButtonColor: '#0f4c81' });
+          return;
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'จองห้องประชุมสำเร็จ!',
+          text: 'รหัสการจอง: ' + res.data.booking.BookingID,
+          confirmButtonColor: '#0f4c81',
+          confirmButtonText: '<i class="bi bi-qr-code"></i> ดูรายละเอียด & QR Code'
+        }).then(function() {
+          openBookingDetailModal(res.data.booking.BookingID);
+        });
+
+        document.getElementById('bookingForm').reset();
+        document.getElementById('bkDate').value = payload.date;
+        document.getElementById('availCheckDate').value = payload.date;
+
+        if (STATE.user.authenticated) {
+          if (document.getElementById('bkName')) document.getElementById('bkName').value = STATE.user.name || '';
+          if (document.getElementById('bkEmail')) document.getElementById('bkEmail').value = STATE.user.email || '';
+          if (document.getElementById('bkDept')) document.getElementById('bkDept').value = STATE.user.department || '';
+          if (document.getElementById('bkPhone')) document.getElementById('bkPhone').value = STATE.user.phone || '';
+        }
+
+        onBookingDateChanged();
+        renderBookingLayoutCards();
+      })
+      .catch(function(err) {
+        Swal.fire({ icon: 'error', title: 'บันทึกการจองไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' });
+      })
+      .finally(function() {
+        if (btn) btn.disabled = false;
+        setLoading(false);
       });
-      document.getElementById('bookingForm').reset();
-      onBookingDateChanged();
-    }).catch(function(err) { Swal.fire({ icon: 'error', title: 'จองไม่สำเร็จ', text: err.message }); }).finally(function() { setLoading(false); });
   }
 
   function renderRoomsDirectory() {
