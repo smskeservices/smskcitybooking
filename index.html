@@ -2,117 +2,210 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <title>ระบบจองห้องประชุมออนไลน์ | เทศบาลเมืองสมุทรสงคราม</title>
-  
-  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  
-  <!-- External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  
-  <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css">
+  <style>
+    :root {
+      --primary: #0f4c81; --primary-light: #0284c7; --teal: #0d9488;
+      --gradient: linear-gradient(135deg, #0f4c81 0%, #0284c7 55%, #0d9488 100%);
+      --bg: #f1f5f9; --surface: #ffffff; --text: #1e293b; --muted: #64748b;
+      --border: #e2e8f0; --success: #16a34a; --warning: #d97706; --danger: #dc2626;
+      --radius: 14px; --shadow: 0 4px 20px rgba(15, 76, 129, 0.08); --sidebar-w: 260px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.55; }
+    .app-shell { display: flex; min-height: 100vh; }
+    .sidebar { width: var(--sidebar-w); background: var(--gradient); color: #fff; position: fixed; top: 0; left: 0; bottom: 0; z-index: 1040; display: flex; flex-direction: column; transition: transform 0.28s ease; box-shadow: 4px 0 24px rgba(15,76,129,0.18); }
+    .sidebar-brand { padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.16); display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.2); display: grid; place-items: center; font-size: 22px; flex-shrink: 0; }
+    .brand-text h1 { font-size: 16px; font-weight: 700; line-height: 1.25; }
+    .brand-text span { font-size: 12px; opacity: 0.88; display: block; }
+    .sidebar-nav { flex: 1; padding: 14px 12px; overflow-y: auto; }
+    .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; border: none; background: transparent; color: rgba(255,255,255,0.88); padding: 11px 14px; border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; text-align: left; transition: all 0.2s; margin-bottom: 4px; }
+    .nav-item i { font-size: 18px; width: 22px; text-align: center; }
+    .nav-item:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    .nav-item.active { background: #fff; color: var(--primary); font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .menu-badge-count { margin-left: auto; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; animation: pulseBadge 1.8s infinite; }
+    @keyframes pulseBadge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+    .sidebar-user-box { margin: 8px 12px 4px; padding: 10px 12px; background: rgba(255,255,255,0.14); border-radius: 12px; display: flex; align-items: center; gap: 10px; }
+    .sidebar-user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #fff; color: var(--primary); font-weight: 700; display: grid; place-items: center; font-size: 15px; flex-shrink: 0; }
+    .sidebar-user-info { flex: 1; overflow: hidden; cursor: pointer; }
+    .sidebar-user-info strong, .sidebar-user-info small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-user-info strong { font-size: 13.5px; }
+    .sidebar-user-info small { font-size: 11.5px; opacity: 0.85; }
+    .btn-logout-icon { border: none; background: rgba(255,255,255,0.2); color: #fff; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: grid; place-items: center; font-size: 15px; }
+    .btn-logout-icon:hover { background: var(--danger); }
+    .sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.15); font-size: 12px; opacity: 0.85; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 1035; }
+    .sidebar-overlay.show { display: block; }
+    .main-wrap { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; min-width: 0; }
+    .topbar { position: sticky; top: 0; z-index: 1020; background: rgba(255,255,255,0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); padding: 12px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .menu-toggle { display: none; border: 1px solid var(--border); background: #fff; color: var(--primary); width: 40px; height: 40px; border-radius: 10px; font-size: 20px; cursor: pointer; }
+    .page-title { font-size: 19px; font-weight: 700; color: var(--primary); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .user-pill { display: flex; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; padding: 5px 12px; border-radius: 999px; font-size: 13px; color: var(--primary); cursor: pointer; }
+    .user-avatar-mini { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .user-meta-wrap { display: flex; flex-direction: column; line-height: 1.15; }
+    .user-dept-text { font-size: 11px; color: var(--muted); }
+    .role-badge { background: var(--primary); color: #fff; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .role-badge.Admin { background: #7c3aed; } .role-badge.Approver { background: #059669; } .role-badge.User { background: #0284c7; }
+    .btn-topbar-logout { border: none; background: transparent; color: var(--danger); cursor: pointer; font-size: 15px; padding: 2px 4px; border-radius: 6px; display: inline-flex; align-items: center; }
+    .content-area { padding: 20px 22px 80px; max-width: 1400px; width: 100%; margin: 0 auto; }
+    .app-view { display: none; animation: fadeIn 0.22s ease; }
+    .app-view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 18px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .card-title { font-size: 17px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left: 4px solid var(--primary-light); }
+    .kpi-card.teal { border-left-color: var(--teal); } .kpi-card.green { border-left-color: var(--success); } .kpi-card.amber { border-left-color: var(--warning); } .kpi-card.red { border-left-color: var(--danger); }
+    .kpi-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.2; margin-top: 2px; }
+    .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .kpi-icon { width: 46px; height: 46px; border-radius: 12px; background: #eff6ff; color: var(--primary-light); display: grid; place-items: center; font-size: 22px; flex-shrink: 0; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+    .avail-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .avail-item { border: 2px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; background: #fff; transition: all 0.18s; }
+    .avail-item:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+    .avail-item.selected { border-color: var(--primary); background: #eff6ff; box-shadow: 0 0 0 3px rgba(2,132,199,0.16); }
+    .avail-status { font-size: 13px; font-weight: 600; margin-top: 4px; }
+    .avail-free { color: var(--success); } .avail-busy { color: var(--danger); }
+    .room-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+    .room-img { width: 100%; height: 170px; object-fit: cover; background: #e2e8f0; }
+    .room-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; }
+    .room-meta { font-size: 13px; color: var(--muted); margin: 6px 0; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 13.5px; font-weight: 600; color: #334155; }
+    .req { color: var(--danger); }
+    input, select, textarea { font-family: inherit; font-size: 14.5px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; color: var(--text); width: 100%; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(2,132,199,0.15); }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; filter: invert(0.3) sepia(1) saturate(5) hue-rotate(175deg); font-size: 16px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 16px; border-radius: 10px; border: none; font-family: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: all 0.18s; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: var(--gradient); color: #fff; }
+    .btn-outline { background: #fff; border: 1px solid var(--primary-light); color: var(--primary-light); }
+    .btn-success { background: var(--success); color: #fff; } .btn-danger { background: var(--danger); color: #fff; } .btn-light { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: 6px 11px; font-size: 13px; border-radius: 8px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+    th { background: #f8fafc; color: var(--primary); font-weight: 700; white-space: nowrap; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .badge-pending { background: #fef3c7; color: #b45309; } .badge-approved { background: #dcfce7; color: #15803d; } .badge-rejected { background: #fee2e2; color: #b91c1c; } .badge-cancelled { background: #e2e8f0; color: #475569; } .badge-completed { background: #dbeafe; color: #1d4ed8; }
+    .alert { padding: 12px 15px; border-radius: 10px; margin: 12px 0; font-size: 14px; border: 1px solid transparent; }
+    .alert-success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; } .alert-danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .slot-chip { display: inline-block; margin: 4px 6px 0 0; padding: 4px 10px; background: #fff; border: 1px solid #0284c7; color: #0284c7; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+    .slot-chip:hover { background: #0284c7; color: #fff; }
+    .time-preset-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .time-preset-btn { border: 1px solid var(--border); background: #fff; color: var(--text); padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 4px; }
+    .time-preset-btn.active { background: var(--primary-light); color: #fff; border-color: var(--primary-light); }
+    .duration-badge { display: inline-flex; align-items: center; gap: 4px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; margin-left: auto; }
+    .live-avail-banner { border-radius: 10px; padding: 12px 14px; margin-top: 10px; display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; }
+    .live-avail-banner.available { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    .live-avail-banner.busy { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+    .live-avail-banner.checking { background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1; }
+    .layout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 8px; }
+    .layout-card { border: 2px solid var(--border); border-radius: 12px; background: #fff; cursor: pointer; overflow: hidden; transition: all 0.2s ease; display: flex; flex-direction: column; }
+    .layout-card.selected { border-color: var(--primary); background: #eff6ff; box-shadow: 0 0 0 3px rgba(2,132,199,0.2); }
+    .layout-media-wrap { position: relative; width: 100%; height: 115px; background: #e2e8f0; }
+    .layout-media-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .layout-tab-pill { position: absolute; bottom: 6px; right: 6px; background: rgba(15,23,42,0.75); border-radius: 6px; display: flex; padding: 2px; gap: 3px; }
+    .layout-tab-btn { border: none; background: transparent; color: #cbd5e1; font-size: 11px; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-family: inherit; }
+    .layout-tab-btn.active { background: var(--primary-light); color: #fff; font-weight: 600; }
+    .layout-info { padding: 10px 12px; display: flex; flex-direction: column; flex: 1; }
+    .layout-title { font-size: 13.5px; font-weight: 700; color: var(--primary); }
+    .layout-desc { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+    .btn-preview-layout { font-size: 11.5px; color: var(--primary-light); background: transparent; border: none; cursor: pointer; text-decoration: underline; margin-top: 6px; align-self: flex-start; padding: 0; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .tab-btn { padding: 8px 14px; border-radius: 9px; border: 1px solid var(--border); background: #fff; color: var(--muted); font-family: inherit; font-weight: 600; cursor: pointer; }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tab-panel { display: none; } .tab-panel.active { display: block; }
+    .modal-backdrop { display: none; position: fixed; inset: 0; z-index: 1060; background: rgba(15,23,42,0.55); backdrop-filter: blur(3px); align-items: center; justify-content: center; padding: 16px; }
+    .modal-backdrop.show { display: flex; }
+    .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.22); }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .modal-header h3 { font-size: 17px; color: var(--primary); font-weight: 700; }
+    .modal-close { border: none; background: transparent; font-size: 22px; color: var(--muted); cursor: pointer; }
+    .modal-body { padding: 18px 20px; }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .loading-overlay { display: none; position: fixed; inset: 0; z-index: 1090; background: rgba(255,255,255,0.75); backdrop-filter: blur(2px); align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .loading-overlay.show { display: flex; }
+    .spinner { width: 44px; height: 44px; border: 4px solid #cbd5e1; border-top-color: var(--primary-light); border-radius: 50%; animation: spin 0.75s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .legend-wrap { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+    .qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 12px; margin-top: 12px; }
+    .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030; background: #fff; border-top: 1px solid var(--border); grid-template-columns: repeat(4, 1fr); padding: 6px 4px; }
+    .mobile-bottom-btn { border: none; background: transparent; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit; font-size: 11px; font-weight: 600; padding: 4px; cursor: pointer; }
+    .mobile-bottom-btn.active { color: var(--primary-light); }
+    .mobile-bottom-btn i { font-size: 19px; }
+    .swal2-popup { font-family: 'Sarabun', sans-serif !important; border-radius: 16px !important; }
+    .swal2-title { font-size: 19px !important; font-weight: 700 !important; color: var(--primary) !important; }
+    @media (max-width: 960px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main-wrap { margin-left: 0; } .menu-toggle { display: inline-grid; place-items: center; } .grid-2 { grid-template-columns: 1fr; } .mobile-bottom-nav { display: grid; } }
+    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } .content-area { padding: 14px 12px 84px; } .topbar { padding: 10px 14px; } .user-meta-wrap { display: none; } }
+  </style>
 </head>
 <body>
-  <!-- Overlay สำหรับเมนูด้านข้างบนหน้าจอมือถือ -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
-
   <div class="app-shell">
-    <!-- Sidebar (เมนูด้านข้าง) -->
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <div class="brand-icon"><i class="bi bi-building-check"></i></div>
-        <div class="brand-text">
-          <h1>ระบบจองห้องประชุม</h1>
-          <span id="orgNameLabel">เทศบาลเมืองสมุทรสงคราม</span>
-        </div>
+        <div class="brand-text"><h1>ระบบจองห้องประชุม</h1><span id="orgNameLabel">เทศบาลเมืองสมุทรสงคราม</span></div>
       </div>
-
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')">
-          <i class="bi bi-speedometer2"></i><span>Dashboard</span>
-        </button>
-        <button class="nav-item" data-view="booking" onclick="navigateTo('booking')">
-          <i class="bi bi-calendar-plus"></i><span>จองห้องประชุม</span>
-        </button>
-        <button class="nav-item approver-nav-item" id="navApprovalBtn" data-view="approval" onclick="navigateTo('approval')" style="display:none;">
-          <i class="bi bi-check2-square"></i><span>อนุมัติการจอง</span>
-          <span class="menu-badge-count" id="sidebarPendingBadge" style="display:none;">0</span>
-        </button>
-        <button class="nav-item auth-required-nav" data-view="calendar" onclick="navigateTo('calendar')" style="display:none;">
-          <i class="bi bi-calendar3"></i><span>ตารางการใช้ห้อง</span>
-        </button>
-        <button class="nav-item" data-view="rooms" onclick="navigateTo('rooms')">
-          <i class="bi bi-door-open"></i><span>ห้องประชุม</span>
-        </button>
-        <button class="nav-item auth-required-nav" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;">
-          <i class="bi bi-journal-check"></i><span>รายการจองของฉัน</span>
-        </button>
-        <button class="nav-item auth-required-nav" data-view="stats" onclick="navigateTo('stats')" style="display:none;">
-          <i class="bi bi-bar-chart-line"></i><span>สถิติ &amp; ค้นหา</span>
-        </button>
-        <button class="nav-item" id="navAdminBtn" data-view="admin" onclick="navigateTo('admin')" style="display:none;">
-          <i class="bi bi-shield-lock"></i><span>จัดการระบบ</span>
-          <span class="menu-badge-count" id="sidebarAdminBadge" style="display:none;">0</span>
-        </button>
+        <button class="nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')"><i class="bi bi-speedometer2"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-view="booking" onclick="navigateTo('booking')"><i class="bi bi-calendar-plus"></i><span>จองห้องประชุม</span></button>
+        <button class="nav-item approver-nav-item" id="navApprovalBtn" data-view="approval" onclick="navigateTo('approval')" style="display:none;"><i class="bi bi-check2-square"></i><span>อนุมัติการจอง</span><span class="menu-badge-count" id="sidebarPendingBadge" style="display:none;">0</span></button>
+        <button class="nav-item auth-required-nav" data-view="calendar" onclick="navigateTo('calendar')" style="display:none;"><i class="bi bi-calendar3"></i><span>ตารางการใช้ห้อง</span></button>
+        <button class="nav-item" data-view="rooms" onclick="navigateTo('rooms')"><i class="bi bi-door-open"></i><span>ห้องประชุม</span></button>
+        <button class="nav-item auth-required-nav" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;"><i class="bi bi-journal-check"></i><span>รายการจองของฉัน</span></button>
+        <button class="nav-item auth-required-nav" data-view="stats" onclick="navigateTo('stats')" style="display:none;"><i class="bi bi-bar-chart-line"></i><span>สถิติ &amp; ค้นหา</span></button>
+        <button class="nav-item" id="navAdminBtn" data-view="admin" onclick="navigateTo('admin')" style="display:none;"><i class="bi bi-shield-lock"></i><span>จัดการระบบ</span><span class="menu-badge-count" id="sidebarAdminBadge" style="display:none;">0</span></button>
       </nav>
-
       <div class="sidebar-user-box" id="sidebarUserBox" style="display:none;">
         <div class="sidebar-user-avatar" id="sidebarUserAvatar">บ</div>
-        <div class="sidebar-user-info" onclick="openProfileModal()" style="cursor:pointer;" title="คลิกเพื่อแก้ไขข้อมูลโปรไฟล์">
-          <strong id="sidebarUserName">-</strong>
-          <small id="sidebarUserDept">-</small>
-        </div>
-        <button type="button" class="btn-logout-icon" onclick="handleLogout()" title="ออกจากระบบ">
-          <i class="bi bi-box-arrow-right"></i>
-        </button>
+        <div class="sidebar-user-info" onclick="openProfileModal()"><strong id="sidebarUserName">-</strong><small id="sidebarUserDept">-</small></div>
+        <button type="button" class="btn-logout-icon" onclick="handleLogout()" title="ออกจากระบบ"><i class="bi bi-box-arrow-right"></i></button>
       </div>
-
-      <div class="sidebar-footer">
-        <div><i class="bi bi-geo-alt"></i> เทศบาลเมืองสมุทรสงคราม</div>
-        <div style="opacity:0.75; margin-top:2px;">Smart Meeting Room v2.0</div>
-      </div>
+      <div class="sidebar-footer"><div><i class="bi bi-geo-alt"></i> เทศบาลเมืองสมุทรสงคราม</div><div style="opacity:0.75;">GitHub Pages Edition</div></div>
     </aside>
 
-    <!-- Main Content Wrapper -->
+    <!-- Main Content -->
     <div class="main-wrap">
       <header class="topbar">
         <div class="topbar-left">
-          <button class="menu-toggle" onclick="toggleSidebar(true)" aria-label="เปิดเมนู">
-            <i class="bi bi-list"></i>
-          </button>
+          <button class="menu-toggle" onclick="toggleSidebar(true)"><i class="bi bi-list"></i></button>
           <div class="page-title" id="pageTitle">Dashboard ภาพรวมระบบ</div>
         </div>
-
         <div class="topbar-right">
-          <div class="user-pill" id="headerUserBox" style="display:none; cursor:pointer;" onclick="openProfileModal()" title="คลิกเพื่อดู/แก้ไขข้อมูลโปรไฟล์ส่วนตัว">
+          <div class="user-pill" id="headerUserBox" style="display:none;" onclick="openProfileModal()" title="คลิกเพื่อดู/แก้ไขโปรไฟล์">
             <div class="user-avatar-mini" id="headerUserAvatar">บ</div>
-            <div class="user-meta-wrap">
-              <span class="user-name-text" id="headerUserName">กำลังโหลด...</span>
-              <span class="user-dept-text" id="headerUserDept">-</span>
-            </div>
+            <div class="user-meta-wrap"><span class="user-name-text" id="headerUserName">-</span><span class="user-dept-text" id="headerUserDept">-</span></div>
             <span class="role-badge" id="headerUserRole">User</span>
-            <button type="button" class="btn-topbar-logout" onclick="event.stopPropagation(); handleLogout();" title="ออกจากระบบ">
-              <i class="bi bi-box-arrow-right"></i>
-            </button>
+            <button type="button" class="btn-topbar-logout" onclick="event.stopPropagation(); handleLogout();" title="ออกจากระบบ"><i class="bi bi-box-arrow-right"></i></button>
           </div>
-
-          <button class="btn btn-primary btn-sm" id="authActionBtn" onclick="openLoginModal()">
-            <i class="bi bi-person-circle"></i> <span>เข้าสู่ระบบ</span>
-          </button>
+          <button class="btn btn-primary btn-sm" id="authActionBtn" onclick="openLoginModal()"><i class="bi bi-person-circle"></i> <span>เข้าสู่ระบบ</span></button>
         </div>
       </header>
 
-      <!-- ส่วนเนื้อหาหลักแต่ละหน้า (SPA Views) -->
       <main class="content-area">
-        <!-- Dashboard View -->
+        <!-- View: Dashboard -->
         <section class="app-view active" id="view-dashboard">
           <div class="card" style="background:var(--gradient); color:#fff; border:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
@@ -121,435 +214,171 @@
                 <p style="opacity:0.9; font-size:14px;">ตรวจสอบตารางห้องประชุมแบบ Real-time จองห้อง และติดตามสถานะอนุมัติได้ทุกที่</p>
               </div>
               <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="btn btn-light" onclick="navigateTo('calendar')"><i class="bi bi-calendar3"></i> ดูปฏิทิน</button>
-                <button class="btn" style="background:#fff; color:var(--primary);" onclick="navigateTo('booking')">
-                  <i class="bi bi-plus-circle"></i> จองห้องประชุมทันที
-                </button>
+                <button class="btn btn-light" onclick="navigateTo('rooms')"><i class="bi bi-door-open"></i> ดูห้องประชุม</button>
+                <button class="btn" style="background:#fff; color:var(--primary);" onclick="navigateTo('booking')"><i class="bi bi-plus-circle"></i> จองห้องประชุมทันที</button>
               </div>
             </div>
           </div>
-
-          <div class="grid-kpi" id="dashboardKpis">
-            <div class="kpi-card">
-              <div><div class="kpi-label">ห้องประชุมทั้งหมด</div><div class="kpi-value" id="kpiTotalRooms">-</div></div>
-              <div class="kpi-icon"><i class="bi bi-building"></i></div>
-            </div>
-            <div class="kpi-card green">
-              <div><div class="kpi-label">ห้องว่างวันนี้</div><div class="kpi-value" id="kpiAvailToday">-</div></div>
-              <div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-check-circle"></i></div>
-            </div>
-            <div class="kpi-card teal">
-              <div><div class="kpi-label">ห้องที่ถูกจองวันนี้</div><div class="kpi-value" id="kpiBookedToday">-</div></div>
-              <div class="kpi-icon" style="background:#ccfbf1; color:#0f766e;"><i class="bi bi-calendar-event"></i></div>
-            </div>
-            <div class="kpi-card">
-              <div><div class="kpi-label">การจองทั้งหมด</div><div class="kpi-value" id="kpiTotalBookings">-</div></div>
-              <div class="kpi-icon"><i class="bi bi-journal-text"></i></div>
-            </div>
-            <div class="kpi-card amber">
-              <div><div class="kpi-label">รออนุมัติ</div><div class="kpi-value" id="kpiPending">-</div></div>
-              <div class="kpi-icon" style="background:#fef3c7; color:#b45309;"><i class="bi bi-hourglass-split"></i></div>
-            </div>
-            <div class="kpi-card green">
-              <div><div class="kpi-label">อนุมัติแล้ว</div><div class="kpi-value" id="kpiApproved">-</div></div>
-              <div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-patch-check"></i></div>
-            </div>
-            <div class="kpi-card red">
-              <div><div class="kpi-label">ยกเลิก</div><div class="kpi-value" id="kpiCancelled">-</div></div>
-              <div class="kpi-icon" style="background:#fee2e2; color:#b91c1c;"><i class="bi bi-x-circle"></i></div>
-            </div>
-            <div class="kpi-card teal">
-              <div>
-                <div class="kpi-label">ห้องที่ใช้บ่อยที่สุด</div>
-                <div class="kpi-value" style="font-size:17px;" id="kpiMostUsed">-</div>
-                <div class="kpi-sub" id="kpiMostUsedSub"></div>
-              </div>
-              <div class="kpi-icon" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-trophy"></i></div>
-            </div>
+          <div class="grid-kpi">
+            <div class="kpi-card"><div><div class="kpi-label">ห้องประชุมทั้งหมด</div><div class="kpi-value" id="kpiTotalRooms">-</div></div><div class="kpi-icon"><i class="bi bi-building"></i></div></div>
+            <div class="kpi-card green"><div><div class="kpi-label">ห้องว่างวันนี้</div><div class="kpi-value" id="kpiAvailToday">-</div></div><div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-check-circle"></i></div></div>
+            <div class="kpi-card teal"><div><div class="kpi-label">ห้องที่ถูกจองวันนี้</div><div class="kpi-value" id="kpiBookedToday">-</div></div><div class="kpi-icon" style="background:#ccfbf1; color:#0f766e;"><i class="bi bi-calendar-event"></i></div></div>
+            <div class="kpi-card"><div><div class="kpi-label">การจองทั้งหมด</div><div class="kpi-value" id="kpiTotalBookings">-</div></div><div class="kpi-icon"><i class="bi bi-journal-text"></i></div></div>
+            <div class="kpi-card amber"><div><div class="kpi-label">รออนุมัติ</div><div class="kpi-value" id="kpiPending">-</div></div><div class="kpi-icon" style="background:#fef3c7; color:#b45309;"><i class="bi bi-hourglass-split"></i></div></div>
+            <div class="kpi-card green"><div><div class="kpi-label">อนุมัติแล้ว</div><div class="kpi-value" id="kpiApproved">-</div></div><div class="kpi-icon" style="background:#dcfce7; color:#15803d;"><i class="bi bi-patch-check"></i></div></div>
+            <div class="kpi-card red"><div><div class="kpi-label">ยกเลิก</div><div class="kpi-value" id="kpiCancelled">-</div></div><div class="kpi-icon" style="background:#fee2e2; color:#b91c1c;"><i class="bi bi-x-circle"></i></div></div>
+            <div class="kpi-card teal"><div><div class="kpi-label">ห้องที่ใช้บ่อยที่สุด</div><div class="kpi-value" style="font-size:17px;" id="kpiMostUsed">-</div><div class="kpi-sub" id="kpiMostUsedSub"></div></div><div class="kpi-icon" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-trophy"></i></div></div>
           </div>
-
           <div class="grid-2">
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title"><i class="bi bi-bar-chart"></i> สถิติการใช้งานแยกตามห้องประชุม</div>
-              </div>
-              <canvas id="chartByRoom" height="190"></canvas>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title"><i class="bi bi-graph-up"></i> แนวโน้มการจองรายเดือน</div>
-              </div>
-              <canvas id="chartByMonth" height="190"></canvas>
-            </div>
+            <div class="card"><div class="card-header"><div class="card-title"><i class="bi bi-bar-chart"></i> สถิติการใช้งานแยกตามห้องประชุม</div></div><canvas id="chartByRoom" height="190"></canvas></div>
+            <div class="card"><div class="card-header"><div class="card-title"><i class="bi bi-graph-up"></i> แนวโน้มการจองรายเดือน</div></div><canvas id="chartByMonth" height="190"></canvas></div>
           </div>
-
           <div class="card" id="dashPendingCardContainer" style="display:none;">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-clock-history"></i> รายการจองล่าสุดที่รออนุมัติ</div>
-              <button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>รหัส</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>ดูรายละเอียด</th>
-                  </tr>
-                </thead>
-                <tbody id="dashPendingBody">
-                  <tr><td colspan="7" style="text-align:center; color:var(--muted);">กำลังโหลดข้อมูล...</td></tr>
-                </tbody>
-              </table>
-            </div>
+            <div class="card-header"><div class="card-title"><i class="bi bi-clock-history"></i> รายการจองล่าสุดที่รออนุมัติ</div><button class="btn btn-outline btn-sm" onclick="loadDashboard()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button></div>
+            <div class="table-wrap"><table><thead><tr><th>รหัส</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>ดูรายละเอียด</th></tr></thead><tbody id="dashPendingBody"></tbody></table></div>
           </div>
         </section>
 
-        <!-- Booking View -->
+        <!-- View: Stats & Search -->
+        <section class="app-view" id="view-stats">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="bi bi-search"></i> ค้นหารายการจองห้องประชุมทั้งหมด</div></div>
+            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom:14px;">
+              <div class="form-group"><label>คำค้นหา</label><input type="text" id="searchQuery" placeholder="รหัส / ผู้จอง / หัวข้อ"></div>
+              <div class="form-group"><label>ห้องประชุม</label><select id="searchRoom"><option value="">ทั้งหมด</option></select></div>
+              <div class="form-group"><label>วันที่ใช้งาน</label><input type="date" id="searchDate"></div>
+              <div class="form-group"><label>สถานะ</label><select id="searchStatus"><option value="">ทั้งหมด</option><option value="รออนุมัติ">รออนุมัติ</option><option value="อนุมัติ">อนุมัติ</option><option value="ไม่อนุมัติ">ไม่อนุมัติ</option><option value="ยกเลิก">ยกเลิก</option><option value="เสร็จสิ้น">เสร็จสิ้น</option></select></div>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:14px;"><button class="btn btn-primary" onclick="runBookingSearch()"><i class="bi bi-search"></i> ค้นหา</button><button class="btn btn-light" onclick="resetBookingSearch()"><i class="bi bi-eraser"></i> ล้างตัวกรอง</button></div>
+            <div class="table-wrap"><table><thead><tr><th>รหัสจอง</th><th>วันที่</th><th>เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="searchResultBody"></tbody></table></div>
+          </div>
+          <div class="card"><div class="card-header"><div class="card-title"><i class="bi bi-pie-chart"></i> สัดส่วนสถานะการจองทั้งหมด</div></div><div style="max-width:420px; margin:0 auto;"><canvas id="chartByStatus" height="220"></canvas></div></div>
+        </section>
+
+        <!-- View: Booking -->
         <section class="app-view" id="view-booking">
           <div class="card">
             <div class="card-header">
               <div class="card-title"><i class="bi bi-calendar2-check"></i> 1. ตรวจสอบสถานะห้องว่างอัตโนมัติประจำวัน</div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <label for="availCheckDate" style="margin:0; font-size:14px; font-weight:600;">วันที่ใช้งาน:</label>
-                <input type="date" id="availCheckDate" style="width:auto; font-weight:600;" onchange="onBookingDateChanged()">
-              </div>
+              <div style="display:flex; align-items:center; gap:8px;"><label for="availCheckDate" style="margin:0;">วันที่ใช้งาน:</label><input type="date" id="availCheckDate" style="width:auto;" onchange="onBookingDateChanged()"></div>
             </div>
-            <div class="avail-list" id="roomAvailCards">
-              <div style="color:var(--muted); padding:10px 0;">กำลังโหลดสถานะห้องประชุม...</div>
-            </div>
+            <div class="avail-list" id="roomAvailCards"></div>
           </div>
-
           <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-pencil-square"></i> 2. กรอกข้อมูลการจองและกำหนดรูปแบบห้องประชุม</div>
-            </div>
-
+            <div class="card-header"><div class="card-title"><i class="bi bi-pencil-square"></i> 2. กรอกข้อมูลการจองและกำหนดรูปแบบห้องประชุม</div></div>
             <form id="bookingForm" onsubmit="submitBookingForm(event)">
               <div class="form-grid">
-                <div class="form-group">
-                  <label>ชื่อผู้จอง <span class="req">*</span></label>
-                  <input type="text" id="bkName" required placeholder="เช่น นายสมชาย ใจดี">
-                </div>
-                <div class="form-group">
-                  <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
-                  <select id="bkDept" required></select>
-                </div>
-                <div class="form-group">
-                  <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ <span class="req">*</span></label>
-                  <input type="tel" id="bkPhone" required placeholder="เช่น 081-234-5678">
-                </div>
-                <div class="form-group">
-                  <label>อีเมลผู้ใช้งาน <span class="req">*</span></label>
-                  <input type="email" id="bkEmail" required placeholder="name@samutsongkhram.go.th">
-                </div>
-
-                <div class="form-group">
-                  <label>ห้องประชุมที่ต้องการจอง <span class="req">*</span></label>
-                  <select id="bkRoomId" required onchange="syncSelectedRoomCard(); triggerAutoCheckAvailability();"></select>
-                </div>
-                <div class="form-group">
-                  <label>วันที่ใช้งาน <span class="req">*</span></label>
-                  <input type="date" id="bkDate" required onchange="syncDateFromForm(); triggerAutoCheckAvailability();">
-                </div>
-
+                <div class="form-group"><label>ชื่อผู้จอง <span class="req">*</span></label><input type="text" id="bkName" required></div>
+                <div class="form-group"><label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label><select id="bkDept" required></select></div>
+                <div class="form-group"><label>เบอร์โทรศัพท์ติดต่อ <span class="req">*</span></label><input type="tel" id="bkPhone" required></div>
+                <div class="form-group"><label>อีเมลผู้ใช้งาน <span class="req">*</span></label><input type="email" id="bkEmail" required></div>
+                <div class="form-group"><label>ห้องประชุม <span class="req">*</span></label><select id="bkRoomId" required onchange="syncSelectedRoomCard(); triggerAutoCheckAvailability();"></select></div>
+                <div class="form-group"><label>วันที่ใช้งาน <span class="req">*</span></label><input type="date" id="bkDate" required onchange="syncDateFromForm(); triggerAutoCheckAvailability();"></div>
                 <div class="form-group full" style="background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:14px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
-                    <label style="margin:0; font-size:14px;"><i class="bi bi-clock-history"></i> กำหนดช่วงเวลาการใช้งานห้องประชุม <span class="req">*</span></label>
+                    <label style="margin:0;"><i class="bi bi-clock-history"></i> กำหนดช่วงเวลาการใช้งาน <span class="req">*</span></label>
                     <div id="bookingDurationText" class="duration-badge"><i class="bi bi-hourglass-split"></i> รวม 3 ชม. 30 นาที</div>
                   </div>
-
                   <div class="time-preset-wrap">
-                    <button type="button" class="time-preset-btn active" onclick="applyTimePreset('08:30', '12:00', this)"><i class="bi bi-sun"></i> เช้า (08:30 - 12:00)</button>
-                    <button type="button" class="time-preset-btn" onclick="applyTimePreset('13:00', '16:30', this)"><i class="bi bi-brightness-high"></i> บ่าย (13:00 - 16:30)</button>
-                    <button type="button" class="time-preset-btn" onclick="applyTimePreset('08:30', '16:30', this)"><i class="bi bi-calendar-range"></i> เต็มวัน (08:30 - 16:30)</button>
-                    <button type="button" class="time-preset-btn" onclick="applyTimeDuration(60, this)"><i class="bi bi-stopwatch"></i> 1 ชม.</button>
-                    <button type="button" class="time-preset-btn" onclick="applyTimeDuration(120, this)"><i class="bi bi-stopwatch"></i> 2 ชม.</button>
+                    <button type="button" class="time-preset-btn active" onclick="applyTimePreset('08:30','12:00',this)"><i class="bi bi-sun"></i> เช้า (08:30 - 12:00)</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimePreset('13:00','16:30',this)"><i class="bi bi-brightness-high"></i> บ่าย (13:00 - 16:30)</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimePreset('08:30','16:30',this)"><i class="bi bi-calendar-range"></i> เต็มวัน (08:30 - 16:30)</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimeDuration(60,this)"><i class="bi bi-stopwatch"></i> 1 ชม.</button>
+                    <button type="button" class="time-preset-btn" onclick="applyTimeDuration(120,this)"><i class="bi bi-stopwatch"></i> 2 ชม.</button>
                   </div>
-
-                  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div>
-                      <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาเริ่มต้น</small>
-                      <select id="bkStart" required onchange="onStartTimeChanged(); triggerAutoCheckAvailability();"></select>
-                    </div>
-                    <div>
-                      <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาสิ้นสุด</small>
-                      <select id="bkEnd" required onchange="onEndTimeChanged(); triggerAutoCheckAvailability();"></select>
-                    </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div><small style="color:var(--muted); font-weight:600;">เวลาเริ่มต้น</small><select id="bkStart" required onchange="onStartTimeChanged(); triggerAutoCheckAvailability();"></select></div>
+                    <div><small style="color:var(--muted); font-weight:600;">เวลาสิ้นสุด</small><select id="bkEnd" required onchange="onEndTimeChanged(); triggerAutoCheckAvailability();"></select></div>
                   </div>
                   <div id="liveAvailStatusBox"></div>
                 </div>
-
-                <div class="form-group full">
-                  <label>หัวข้อการประชุม / กิจกรรม <span class="req">*</span></label>
-                  <input type="text" id="bkTopic" required placeholder="ระบุหัวข้อหรือชื่อการประชุม">
-                </div>
-
-                <div class="form-group">
-                  <label>จำนวนผู้เข้าร่วม (คน) <span class="req">*</span></label>
-                  <input type="number" id="bkParticipants" required min="1" value="10">
-                </div>
-                <div class="form-group">
-                  <label>รูปแบบการประชุม <span class="req">*</span></label>
-                  <select id="bkMeetingType" required onchange="onMeetingTypeChanged()">
-                    <option value="On-site">On-site (ประชุม ณ ห้องประชุม)</option>
-                    <option value="Online">Online (ประชุมออนไลน์)</option>
-                    <option value="Hybrid">Hybrid (ผสมผสาน On-site + Online)</option>
-                  </select>
-                </div>
-
-                <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:14px; margin-top:6px;">
-                  <label style="display:flex; justify-content:space-between; align-items:center;">
-                    <span><i class="bi bi-grid-3x3-gap"></i> รูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม <span class="req">*</span></span>
-                    <span style="font-size:12px; color:var(--muted); font-weight:normal;">(คลิกเลือกการ์ด หรือสลับดูแผนผัง/ภาพจริงได้)</span>
-                  </label>
+                <div class="form-group full"><label>หัวข้อการประชุม / กิจกรรม <span class="req">*</span></label><input type="text" id="bkTopic" required></div>
+                <div class="form-group"><label>จำนวนผู้เข้าร่วม (คน) <span class="req">*</span></label><input type="number" id="bkParticipants" required min="1" value="10"></div>
+                <div class="form-group"><label>รูปแบบการประชุม <span class="req">*</span></label><select id="bkMeetingType" required onchange="onMeetingTypeChanged()"><option value="On-site">On-site (ประชุม ณ ห้องประชุม)</option><option value="Online">Online (ประชุมออนไลน์)</option><option value="Hybrid">Hybrid (ผสมผสาน On-site + Online)</option></select></div>
+                <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:14px;">
+                  <label><i class="bi bi-grid-3x3-gap"></i> รูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม <span class="req">*</span></label>
                   <input type="hidden" id="bkSeatingLayout" required value="แบบชั้นเรียน (Classroom)">
                   <div class="layout-grid" id="bookingLayoutGrid"></div>
                 </div>
-
-                <div class="form-group full" style="margin-top:6px;">
-                  <label>อุปกรณ์ที่ต้องการเพิ่มเติม</label>
-                  <input type="text" id="bkEquipment" placeholder="เช่น ไมโครโฟนตั้งโต๊ะ 6 ตัว, สายต่อ HDMI">
-                </div>
-                <div class="form-group full">
-                  <label>รายละเอียดเพิ่มเติม / ข้อความถึงผู้ดูแล</label>
-                  <textarea id="bkDetail" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
-                </div>
+                <div class="form-group full"><label>อุปกรณ์ที่ต้องการเพิ่มเติม</label><input type="text" id="bkEquipment"></div>
+                <div class="form-group full"><label>รายละเอียดเพิ่มเติม</label><textarea id="bkDetail" rows="2"></textarea></div>
               </div>
-
-              <div id="availabilityCheckBox"></div>
-
-              <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;">
-                <button type="submit" class="btn btn-primary" id="btnSubmitBooking" style="padding:11px 24px;">
-                  <i class="bi bi-check2-circle"></i> ยืนยันการจองห้องประชุม
-                </button>
-              </div>
+              <div style="margin-top:18px;"><button type="submit" class="btn btn-primary" id="btnSubmitBooking"><i class="bi bi-check2-circle"></i> ยืนยันการจองห้องประชุม</button></div>
             </form>
           </div>
         </section>
 
-        <!-- Approval View -->
+        <!-- View: Approval -->
         <section class="app-view" id="view-approval">
           <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-check2-square"></i> รายการรออนุมัติการใช้ห้องประชุม</div>
-              <button class="btn btn-outline btn-sm" onclick="loadApprovalViewData()"><i class="bi bi-arrow-clockwise"></i> รีเฟรชข้อมูล</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>จำนวน</th><th>ดำเนินการพิจารณา</th>
-                  </tr>
-                </thead>
-                <tbody id="standaloneApprovalBody">
-                  <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">กำลังโหลดรายการรออนุมัติ...</td></tr>
-                </tbody>
-              </table>
-            </div>
+            <div class="card-header"><div class="card-title"><i class="bi bi-check2-square"></i> รายการรออนุมัติการใช้ห้องประชุม</div><button class="btn btn-outline btn-sm" onclick="loadApprovalViewData()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button></div>
+            <div class="table-wrap"><table><thead><tr><th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>ผู้จอง / หน่วยงาน</th><th>จำนวน</th><th>ดำเนินการ</th></tr></thead><tbody id="standaloneApprovalBody"></tbody></table></div>
           </div>
         </section>
 
-        <!-- Calendar View -->
+        <!-- View: Rooms -->
+        <section class="app-view" id="view-rooms"><div class="card"><div class="card-header"><div class="card-title"><i class="bi bi-door-open"></i> ข้อมูลห้องประชุมทั้งหมด</div></div><div class="grid-3" id="roomsDirectoryGrid"></div></div></section>
+
+        <!-- View: My Bookings -->
+        <section class="app-view" id="view-mybookings">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-journal-check"></i> รายการจองของฉัน</div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;"><input type="email" id="myBookingEmailInput" placeholder="ระบุอีเมล" style="width:240px;"><button class="btn btn-primary btn-sm" onclick="loadMyBookings()"><i class="bi bi-search"></i> ค้นหา</button></div>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>สถานะ</th><th>ดำเนินการ</th></tr></thead><tbody id="myBookingsBody"></tbody></table></div>
+          </div>
+        </section>
+
+        <!-- View: Calendar -->
         <section class="app-view" id="view-calendar">
           <div class="card">
             <div class="card-header">
               <div class="card-title"><i class="bi bi-calendar3"></i> ปฏิทินการใช้ห้องประชุม</div>
-              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <select id="calendarRoomFilter" style="width:auto;" onchange="loadCalendarEvents()">
-                  <option value="">แสดงทุกห้องประชุม</option>
-                </select>
-                <button class="btn btn-outline btn-sm" onclick="loadCalendarEvents()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
-              </div>
+              <div style="display:flex; gap:10px;"><select id="calendarRoomFilter" style="width:auto;" onchange="loadCalendarEvents()"><option value="">แสดงทุกห้องประชุม</option></select><button class="btn btn-outline btn-sm" onclick="loadCalendarEvents()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button></div>
             </div>
             <div class="legend-wrap" id="calendarLegend"></div>
             <div id="fullCalendarEl"></div>
           </div>
         </section>
 
-        <!-- Rooms Directory View -->
-        <section class="app-view" id="view-rooms">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-door-open"></i> ข้อมูลห้องประชุมทั้งหมด เทศบาลเมืองสมุทรสงคราม</div>
-            </div>
-            <div class="grid-3" id="roomsDirectoryGrid">
-              <div style="color:var(--muted); padding:10px 0;">กำลังโหลดข้อมูลห้องประชุม...</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- My Bookings View -->
-        <section class="app-view" id="view-mybookings">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-journal-check"></i> รายการจองของฉัน</div>
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <input type="email" id="myBookingEmailInput" placeholder="ระบุอีเมลเพื่อค้นหา (กรณีไม่ได้เข้าสู่ระบบ)" style="width:260px;">
-                <button class="btn btn-primary btn-sm" onclick="loadMyBookings()"><i class="bi bi-search"></i> ค้นหารายการจอง</button>
-              </div>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>สถานะ</th><th>ดำเนินการ</th>
-                  </tr>
-                </thead>
-                <tbody id="myBookingsBody">
-                  <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:16px;">กรุณาเข้าสู่ระบบ หรือกรอกอีเมลเพื่อดูรายการจองของคุณ</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- Stats & Search View -->
-        <section class="app-view" id="view-stats">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-search"></i> ค้นหารายการจองห้องประชุมทั้งหมด</div>
-            </div>
-            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom:14px;">
-              <div class="form-group">
-                <label>คำค้นหา (รหัส / ผู้จอง / หัวข้อ)</label>
-                <input type="text" id="searchQuery" placeholder="เช่น BK-..., สมชาย...">
-              </div>
-              <div class="form-group">
-                <label>ห้องประชุม</label>
-                <select id="searchRoom"><option value="">ทั้งหมด</option></select>
-              </div>
-              <div class="form-group">
-                <label>วันที่ใช้งาน</label>
-                <input type="date" id="searchDate">
-              </div>
-              <div class="form-group">
-                <label>สถานะ</label>
-                <select id="searchStatus">
-                  <option value="">ทั้งหมด</option>
-                  <option value="รออนุมัติ">รออนุมัติ</option>
-                  <option value="อนุมัติ">อนุมัติ</option>
-                  <option value="ไม่อนุมัติ">ไม่อนุมัติ</option>
-                  <option value="ยกเลิก">ยกเลิก</option>
-                  <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-                </select>
-              </div>
-            </div>
-            <div style="display:flex; gap:10px; margin-bottom:14px;">
-              <button class="btn btn-primary" onclick="runBookingSearch()"><i class="bi bi-search"></i> ค้นหา</button>
-              <button class="btn btn-light" onclick="resetBookingSearch()"><i class="bi bi-eraser"></i> ล้างตัวกรอง</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>รหัสจอง</th><th>วันที่</th><th>เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / หน่วยงาน</th><th>สถานะ</th><th>จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody id="searchResultBody"></tbody>
-              </table>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-pie-chart"></i> สัดส่วนสถานะการจองทั้งหมด</div>
-            </div>
-            <div style="max-width:420px; margin:0 auto;"><canvas id="chartByStatus" height="220"></canvas></div>
-          </div>
-        </section>
-
-        <!-- Admin Management View -->
+        <!-- View: Admin -->
         <section class="app-view" id="view-admin">
           <div class="card">
             <div class="tabs">
-              <button class="tab-btn active" onclick="switchAdminTab('approval', this)"><i class="bi bi-check2-square"></i> อนุมัติการจอง</button>
-              <button class="tab-btn" onclick="switchAdminTab('allbookings', this)"><i class="bi bi-list-check"></i> จัดการการจองทั้งหมด</button>
-              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('rooms', this)"><i class="bi bi-building-gear"></i> จัดการห้องประชุม &amp; ผังโต๊ะ</button>
-              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('users', this)"><i class="bi bi-people"></i> ผู้ใช้งาน &amp; สิทธิ์</button>
-              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('settings', this)"><i class="bi bi-gear"></i> ตั้งค่าระบบ</button>
-              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('audit', this)"><i class="bi bi-shield-check"></i> Audit Log</button>
+              <button class="tab-btn active" onclick="switchAdminTab('approval', this)">อนุมัติการจอง</button>
+              <button class="tab-btn" onclick="switchAdminTab('allbookings', this)">จัดการการจองทั้งหมด</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('rooms', this)">จัดการห้องประชุม</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('users', this)">ผู้ใช้งาน &amp; สิทธิ์</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('settings', this)">ตั้งค่าระบบ</button>
+              <button class="tab-btn admin-only-tab" onclick="switchAdminTab('audit', this)">Audit Log</button>
             </div>
-
-            <div class="tab-panel active" id="admin-tab-approval">
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / กอง</th><th>จำนวน</th><th>ดำเนินการ</th></tr>
-                  </thead>
-                  <tbody id="adminApprovalBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="tab-panel" id="admin-tab-allbookings">
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง</th><th>สถานะ</th><th>เปลี่ยนสถานะ</th></tr>
-                  </thead>
-                  <tbody id="adminAllBookingsBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="tab-panel" id="admin-tab-rooms">
-              <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
-                <button class="btn btn-primary btn-sm" onclick="openRoomModal()"><i class="bi bi-plus-lg"></i> เพิ่มห้องประชุมใหม่</button>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>รูป</th><th>รหัส</th><th>ชื่อห้องประชุม</th><th>อาคาร / ชั้น</th><th>ความจุ</th><th>สถานะ</th><th>จัดการ</th></tr>
-                  </thead>
-                  <tbody id="adminRoomsBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="tab-panel" id="admin-tab-users">
-              <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
-                <button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้งาน</button>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>อีเมล</th><th>ชื่อ-นามสกุล</th><th>หน่วยงาน (กอง/สำนัก)</th><th>สิทธิ์</th><th>สถานะบัญชี</th><th>จัดการ</th></tr>
-                  </thead>
-                  <tbody id="adminUsersBody"></tbody>
-                </table>
-              </div>
-            </div>
-
+            <div class="tab-panel active" id="admin-tab-approval"><div class="table-wrap"><table><thead><tr><th>รหัส</th><th>วันเวลา</th><th>ห้อง</th><th>หัวข้อ</th><th>ผู้จอง</th><th>จำนวน</th><th>ดำเนินการ</th></tr></thead><tbody id="adminApprovalBody"></tbody></table></div></div>
+            <div class="tab-panel" id="admin-tab-allbookings"><div class="table-wrap"><table><thead><tr><th>รหัส</th><th>วันเวลา</th><th>ห้อง</th><th>หัวข้อ</th><th>ผู้จอง</th><th>สถานะ</th><th>เปลี่ยนสถานะ</th></tr></thead><tbody id="adminAllBookingsBody"></tbody></table></div></div>
+            <div class="tab-panel" id="admin-tab-rooms"><div style="display:flex; justify-content:flex-end; margin-bottom:12px;"><button class="btn btn-primary btn-sm" onclick="openRoomModal()"><i class="bi bi-plus-lg"></i> เพิ่มห้องใหม่</button></div><div class="table-wrap"><table><thead><tr><th>รูป</th><th>รหัส</th><th>ชื่อห้อง</th><th>อาคาร / ชั้น</th><th>ความจุ</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="adminRoomsBody"></tbody></table></div></div>
+            <div class="tab-panel" id="admin-tab-users"><div style="display:flex; justify-content:flex-end; margin-bottom:12px;"><button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้</button></div><div class="table-wrap"><table><thead><tr><th>อีเมล</th><th>ชื่อ-นามสกุล</th><th>หน่วยงาน</th><th>สิทธิ์</th><th>สถานะบัญชี</th><th>จัดการ</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div></div>
             <div class="tab-panel" id="admin-tab-settings">
-              <form id="adminSettingsForm" onsubmit="submitAdminSettings(event)" class="form-grid" style="max-width:720px;">
+              <form id="adminSettingsForm" onsubmit="submitAdminSettings(event)" class="form-grid" style="max-width:740px;">
                 <div class="form-group full"><label>ชื่อหน่วยงาน</label><input type="text" id="setOrgName" required></div>
                 <div class="form-group"><label>เวลาเปิดให้จอง</label><input type="time" id="setOpenHour" required></div>
                 <div class="form-group"><label>เวลาปิดให้จอง</label><input type="time" id="setCloseHour" required></div>
-                <div class="form-group"><label>ระบบอนุมัติก่อนใช้งาน</label><select id="setRequireApproval"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
-                <div class="form-group"><label>ซิงค์ Google Calendar อัตโนมัติ</label><select id="setCalendarSync"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
-                <div class="form-group"><label>แจ้งเตือน Google Chat Webhook</label><select id="setChatNotify"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
-                <div class="form-group"><label>แจ้งเตือนก่อนประชุม 1 วัน</label><select id="setRemind1D"><option value="TRUE">เปิด</option><option value="FALSE">ปิด</option></select></div>
-                <div class="form-group"><label>แจ้งเตือนก่อนประชุม 2 ชั่วโมง</label><select id="setRemind2H"><option value="TRUE">เปิด</option><option value="FALSE">ปิด</option></select></div>
-                <div class="form-group"><label>แจ้งเตือนก่อนประชุม 30 นาที</label><select id="setRemind30M"><option value="TRUE">เปิด</option><option value="FALSE">ปิด</option></select></div>
+                <div class="form-group"><label>ระบบอนุมัติ (Approval)</label><select id="setRequireApproval"><option value="TRUE">เปิดใช้งาน (ต้องรออนุมัติ)</option><option value="FALSE">ปิดใช้งาน (อนุมัติทันที)</option></select></div>
+                <div class="form-group"><label>ซิงค์ Google Calendar</label><select id="setCalendarSync"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
+                <div class="form-group"><label>Google Chat Webhook</label><select id="setChatNotify"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
+                <div class="form-group"><label>Email เตือนก่อน 1 วัน</label><select id="setRemind1D"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
+                <div class="form-group"><label>Email เตือนก่อน 2 ชม.</label><select id="setRemind2H"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
+                <div class="form-group"><label>Email เตือนก่อน 30 นาที</label><select id="setRemind30M"><option value="TRUE">เปิดใช้งาน</option><option value="FALSE">ปิดใช้งาน</option></select></div>
                 <div class="form-group full"><button type="submit" class="btn btn-primary" style="width:fit-content;"><i class="bi bi-save"></i> บันทึกการตั้งค่า</button></div>
               </form>
             </div>
-
-            <div class="tab-panel" id="admin-tab-audit">
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>วันเวลา</th><th>ผู้ดำเนินการ</th><th>สิทธิ์</th><th>กิจกรรม</th><th>เป้าหมาย</th><th>รายละเอียด</th></tr>
-                  </thead>
-                  <tbody id="adminAuditBody"></tbody>
-                </table>
-              </div>
-            </div>
+            <div class="tab-panel" id="admin-tab-audit"><div class="table-wrap"><table><thead><tr><th>วันเวลา</th><th>ผู้ดำเนินการ</th><th>สิทธิ์</th><th>กิจกรรม</th><th>เป้าหมาย</th><th>รายละเอียด</th></tr></thead><tbody id="adminAuditBody"></tbody></table></div></div>
           </div>
         </section>
       </main>
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation -->
+  <!-- Mobile Bottom Nav -->
   <nav class="mobile-bottom-nav">
     <button class="mobile-bottom-btn active" data-view="dashboard" onclick="navigateTo('dashboard')"><i class="bi bi-speedometer2"></i><span>ภาพรวม</span></button>
     <button class="mobile-bottom-btn" data-view="rooms" onclick="navigateTo('rooms')"><i class="bi bi-door-open"></i><span>ห้องประชุม</span></button>
@@ -557,98 +386,86 @@
     <button class="mobile-bottom-btn auth-required-mobile" data-view="mybookings" onclick="navigateTo('mybookings')" style="display:none;"><i class="bi bi-journal-check"></i><span>ของฉัน</span></button>
   </nav>
 
-  <!-- Login & Register Modal -->
+  <!-- Modals -->
   <div class="modal-backdrop" id="loginModal">
     <div class="modal-box" style="max-width:440px;">
-      <div class="modal-header">
-        <h3><i class="bi bi-person-badge"></i> เข้าสู่ระบบบุคลากร</h3>
-        <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
-      </div>
+      <div class="modal-header"><h3><i class="bi bi-shield-lock-fill"></i> เข้าสู่ระบบบุคลากร</h3><button class="modal-close" onclick="closeModal('loginModal')">&times;</button></div>
       <div class="modal-body">
-        <div class="tabs">
-          <button class="tab-btn active" id="authTabLogin" onclick="switchAuthTab('login')">เข้าสู่ระบบ</button>
-          <button class="tab-btn" id="authTabRegister" onclick="switchAuthTab('register')">ลงทะเบียนใหม่</button>
-        </div>
+        <div class="tabs"><button class="tab-btn active" id="authTabLogin" onclick="switchAuthTab('login')">เข้าสู่ระบบ</button><button class="tab-btn" id="authTabRegister" onclick="switchAuthTab('register')">ลงทะเบียนใหม่</button></div>
         <form id="loginForm" onsubmit="submitLogin(event)">
-          <div class="form-group" style="margin-bottom:12px;"><label>อีเมลผู้ใช้งาน <span class="req">*</span></label><input type="email" id="loginEmail" required placeholder="name@samutsongkhram.go.th"></div>
-          <div class="form-group" style="margin-bottom:16px;"><label>รหัสผ่าน / PIN <span class="req">*</span></label><input type="password" id="loginPass" required placeholder="กรอกรหัสผ่านหรือ PIN"></div>
-          <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width:100%;"><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</button>
+          <div class="form-group" style="margin-bottom:12px;"><label>อีเมล <span class="req">*</span></label><input type="email" id="loginEmail" required></div>
+          <div class="form-group" style="margin-bottom:16px;"><label>รหัสผ่าน / PIN <span class="req">*</span></label><input type="password" id="loginPass" required></div>
+          <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width:100%;">ยืนยันการเข้าสู่ระบบ</button>
         </form>
         <form id="registerForm" onsubmit="submitRegister(event)" style="display:none;">
-          <div class="form-group" style="margin-bottom:10px;"><label>ชื่อ-นามสกุล <span class="req">*</span></label><input type="text" id="regName" required placeholder="นาย/นาง/นางสาว..."></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>ชื่อ-นามสกุล <span class="req">*</span></label><input type="text" id="regName" required></div>
           <div class="form-group" style="margin-bottom:10px;"><label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label><select id="regDept" required></select></div>
-          <div class="form-group" style="margin-bottom:10px;"><label>เบอร์โทรศัพท์ <span class="req">*</span></label><input type="tel" id="regPhone" required placeholder="081-234-5678"></div>
-          <div class="form-group" style="margin-bottom:10px;"><label>อีเมล <span class="req">*</span></label><input type="email" id="regEmail" required placeholder="name@samutsongkhram.go.th"></div>
-          <div class="form-group" style="margin-bottom:16px;"><label>กำหนดรหัส PIN <span class="req">*</span></label><input type="password" id="regPass" required minlength="4" placeholder="อย่างน้อย 4 ตัวอักษร"></div>
-          <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width:100%;"><i class="bi bi-person-plus"></i> ลงทะเบียน</button>
+          <div class="form-group" style="margin-bottom:10px;"><label>เบอร์โทรศัพท์ <span class="req">*</span></label><input type="tel" id="regPhone" required></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>อีเมล <span class="req">*</span></label><input type="email" id="regEmail" required></div>
+          <div class="form-group" style="margin-bottom:16px;"><label>กำหนดรหัสผ่าน / PIN <span class="req">*</span></label><input type="password" id="regPass" required minlength="4"></div>
+          <button type="submit" class="btn btn-primary" id="btnRegSubmit" style="width:100%;">ลงทะเบียน (รอ Admin อนุมัติ)</button>
         </form>
       </div>
     </div>
   </div>
 
-  <!-- Profile Modal -->
   <div class="modal-backdrop" id="profileModal">
     <div class="modal-box" style="max-width:440px;">
-      <div class="modal-header">
-        <h3><i class="bi bi-person-lines-fill"></i> โปรไฟล์ส่วนตัว</h3>
-        <button class="modal-close" onclick="closeModal('profileModal')">&times;</button>
-      </div>
+      <div class="modal-header"><h3><i class="bi bi-person-lines-fill"></i> โปรไฟล์ส่วนตัว</h3><button class="modal-close" onclick="closeModal('profileModal')">&times;</button></div>
       <form id="profileForm" onsubmit="submitProfileUpdate(event)">
         <div class="modal-body">
           <div class="form-group" style="margin-bottom:10px;"><label>อีเมล</label><input type="email" id="profEmail" readonly style="background:#f1f5f9;"></div>
           <div class="form-group" style="margin-bottom:10px;"><label>ชื่อ-นามสกุล <span class="req">*</span></label><input type="text" id="profName" required></div>
-          <div class="form-group" style="margin-bottom:10px;"><label>กอง/สำนัก <span class="req">*</span></label><select id="profDept" required></select></div>
-          <div class="form-group" style="margin-bottom:12px;"><label>เบอร์โทรศัพท์ <span class="req">*</span></label><input type="tel" id="profPhone" required></div>
-          <div class="form-group" style="margin-bottom:6px;"><label>เปลี่ยนรหัสผ่านใหม่ (ถ้ามี)</label><input type="password" id="profPass" placeholder="เว้นว่างถ้าไม่เปลี่ยน"></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>หน่วยงาน <span class="req">*</span></label><select id="profDept" required></select></div>
+          <div class="form-group" style="margin-bottom:10px;"><label>เบอร์โทรศัพท์เริ่มต้น <span class="req">*</span></label><input type="tel" id="profPhone" required></div>
+          <div class="form-group"><label>เปลี่ยนรหัสผ่านใหม่ (ไม่บังคับ)</label><input type="password" id="profPass"></div>
         </div>
-        <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" onclick="closeModal('profileModal')">ยกเลิก</button><button type="submit" class="btn btn-primary">บันทึก</button></div>
       </form>
     </div>
   </div>
 
-  <!-- Booking Detail Modal -->
   <div class="modal-backdrop" id="detailModal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3><i class="bi bi-qr-code-scan"></i> รายละเอียดการจอง</h3>
-        <button class="modal-close" onclick="closeModal('detailModal')">&times;</button>
+    <div class="modal-box"><div class="modal-header"><h3><i class="bi bi-qr-code-scan"></i> รายละเอียดการจอง</h3><button class="modal-close" onclick="closeModal('detailModal')">&times;</button></div><div class="modal-body" id="detailModalBody"></div><div class="modal-footer"><button type="button" class="btn btn-light" onclick="closeModal('detailModal')">ปิด</button></div></div>
+  </div>
+
+  <div class="modal-backdrop" id="layoutPreviewModal">
+    <div class="modal-box" style="max-width:680px;">
+      <div class="modal-header"><h3 id="layoutPreviewTitle">ตัวอย่างผังห้อง</h3><button class="modal-close" onclick="closeModal('layoutPreviewModal')">&times;</button></div>
+      <div class="modal-body" style="text-align:center;">
+        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:14px;"><button type="button" class="btn btn-primary btn-sm" id="btnShowPhoto" onclick="switchPreviewMode('photo')">ภาพห้องจริง</button><button type="button" class="btn btn-outline btn-sm" id="btnShowDiagram" onclick="switchPreviewMode('diagram')">ภาพแผนผัง</button></div>
+        <img id="layoutBigImage" src="" style="width:100%; max-height:380px; object-fit:contain; border-radius:10px; background:#0f172a;">
+        <p id="layoutPreviewDesc" style="margin-top:12px; font-size:14px;"></p>
       </div>
-      <div class="modal-body" id="detailModalBody"></div>
-      <div class="modal-footer"><button class="btn btn-light" onclick="closeModal('detailModal')">ปิด</button></div>
     </div>
   </div>
 
-  <!-- Room Modal -->
   <div class="modal-backdrop" id="roomModal">
-    <div class="modal-box" style="max-width:700px;">
-      <div class="modal-header">
-        <h3 id="roomModalTitle">จัดการห้องประชุม</h3>
-        <button class="modal-close" onclick="closeModal('roomModal')">&times;</button>
-      </div>
+    <div class="modal-box" style="max-width:660px;">
+      <div class="modal-header"><h3 id="roomModalTitle">จัดการห้องประชุม</h3><button class="modal-close" onclick="closeModal('roomModal')">&times;</button></div>
       <form id="roomForm" onsubmit="submitRoomForm(event)">
         <div class="modal-body">
           <input type="hidden" id="rmId">
           <div class="form-grid">
-            <div class="form-group full"><label>ชื่อห้อง <span class="req">*</span></label><input type="text" id="rmName" required></div>
+            <div class="form-group full"><label>ชื่อห้องประชุม <span class="req">*</span></label><input type="text" id="rmName" required></div>
             <div class="form-group"><label>อาคาร</label><input type="text" id="rmBuilding"></div>
             <div class="form-group"><label>ชั้น</label><input type="text" id="rmFloor"></div>
-            <div class="form-group"><label>ความจุ <span class="req">*</span></label><input type="number" id="rmCapacity" min="1" required></div>
+            <div class="form-group"><label>ความจุ (คน) <span class="req">*</span></label><input type="number" id="rmCapacity" min="1" required></div>
             <div class="form-group"><label>สถานะ</label><select id="rmStatus"><option value="พร้อมใช้งาน">พร้อมใช้งาน</option><option value="ปิดปรับปรุง">ปิดปรับปรุง</option></select></div>
             <div class="form-group"><label>ผู้รับผิดชอบ</label><input type="text" id="rmResponsible"></div>
-            <div class="form-group"><label>สีปฏิทิน</label><input type="color" id="rmColor" value="#0284c7" style="height:42px; padding:4px;"></div>
+            <div class="form-group"><label>สีประจำห้อง</label><input type="color" id="rmColor" value="#0284c7" style="height:42px; padding:4px;"></div>
             <div class="form-group full"><label>อุปกรณ์</label><input type="text" id="rmEquipment"></div>
             <div class="form-group full"><label>รายละเอียด</label><textarea id="rmDesc" rows="2"></textarea></div>
-            <div class="form-group full"><label>อัปโหลดรูปภาพ</label><input type="file" id="rmImageFile" accept="image/*" onchange="handleRoomImageSelect(event)"></div>
-            <div class="form-group full"><label>หรือลิงก์รูปภาพ</label><input type="url" id="rmImageUrl" oninput="updateRoomImagePreview(this.value)"></div>
-            <div class="form-group full" id="rmPreviewWrap" style="display:none;"><img id="rmPreviewImg" style="width:100%; max-height:180px; object-fit:cover; border-radius:10px;"></div>
+            <div class="form-group full"><label>อัปโหลดรูปภาพขึ้น Google Drive</label><input type="file" id="rmImageFile" accept="image/*" onchange="handleRoomImageSelect(event)"></div>
+            <div class="form-group full"><label>หรือวางลิงก์รูปภาพ (URL)</label><input type="url" id="rmImageUrl" oninput="updateRoomImagePreview(this.value)"></div>
+            <div class="form-group full" id="rmPreviewWrap" style="display:none;"><img id="rmPreviewImg" src="" style="width:100%; max-height:160px; object-fit:cover; border-radius:10px;"></div>
           </div>
         </div>
-        <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" onclick="closeModal('roomModal')">ยกเลิก</button><button type="submit" class="btn btn-primary">บันทึกห้อง</button></div>
       </form>
     </div>
   </div>
 
-  <!-- User Modal -->
   <div class="modal-backdrop" id="userModal">
     <div class="modal-box" style="max-width:460px;">
       <div class="modal-header"><h3>จัดการผู้ใช้งาน</h3><button class="modal-close" onclick="closeModal('userModal')">&times;</button></div>
@@ -661,37 +478,586 @@
             <div class="form-group"><label>สิทธิ์</label><select id="usrRole"><option value="User">User</option><option value="Approver">Approver</option><option value="Admin">Admin</option></select></div>
             <div class="form-group"><label>สถานะ</label><select id="usrStatus"><option value="Active">Active</option><option value="รออนุมัติ">รออนุมัติ</option><option value="Inactive">Inactive</option></select></div>
           </div>
-          <div class="form-group" style="margin-top:10px;"><label>รหัสผ่านใหม่ (ถ้ามี)</label><input type="password" id="usrPasscode"></div>
+          <div class="form-group" style="margin-top:10px;"><label>รหัสผ่าน / PIN ใหม่</label><input type="password" id="usrPasscode"></div>
         </div>
-        <div class="modal-footer"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" onclick="closeModal('userModal')">ยกเลิก</button><button type="submit" class="btn btn-primary">บันทึก</button></div>
       </form>
     </div>
   </div>
 
-  <!-- Layout Preview Modal -->
-  <div class="modal-backdrop" id="layoutPreviewModal">
-    <div class="modal-box" style="max-width:680px;">
-      <div class="modal-header"><h3 id="layoutPreviewTitle">รูปแบบการจัดห้อง</h3><button class="modal-close" onclick="closeModal('layoutPreviewModal')">&times;</button></div>
-      <div class="modal-body" style="text-align:center;">
-        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:14px;">
-          <button type="button" class="btn btn-primary btn-sm" id="btnShowPhoto" onclick="switchPreviewMode('photo')"><i class="bi bi-camera"></i> ภาพจริง</button>
-          <button type="button" class="btn btn-outline btn-sm" id="btnShowDiagram" onclick="switchPreviewMode('diagram')"><i class="bi bi-diagram-2"></i> แผนผัง</button>
-        </div>
-        <img id="layoutBigImage" style="width:100%; max-height:380px; object-fit:contain; border-radius:10px; background:#0f172a;">
-        <p id="layoutPreviewDesc" style="margin-top:12px; font-size:14px;"></p>
-      </div>
-      <div class="modal-footer"><button type="button" class="btn btn-light" onclick="closeModal('layoutPreviewModal')">ปิด</button></div>
-    </div>
-  </div>
-
-  <!-- Toast & Loading -->
-  <div class="toast-container" id="toastContainer"></div>
   <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div id="loadingText" style="font-weight:600; color:var(--primary);">กำลังประมวลผล...</div></div>
 
-  <input type="hidden" id="_boot_page" value="">
-  <input type="hidden" id="_boot_bookingId" value="">
+  <script>
+    // =========================================================================
+    // [สำคัญ] นำ Web App URL (/exec) จาก Google Apps Script มาวางที่นี่
+    // =========================================================================
+    var GAS_API_URL = "https://script.google.com/macros/s/AKfycbzydq9TyPuKDOZi_7qDIhaYRGpHpZsMfaP-MtEi2mRgGHbBy_4BLY6fs644yJaXKw4Bjg/exec";
 
-  <!-- Script เชื่อมต่อ Backend API -->
-  <script src="js/app.js"></script>
+    var STATE = {
+      token: sessionStorage.getItem('MRB_AUTH_TOKEN') || '',
+      user: { authenticated: false, role: 'Guest', email: '', name: '', department: '', phone: '' },
+      settings: {}, departments: [], rooms: [], layouts: [],
+      calendarInstance: null, charts: {}, pendingRoomImage: null, currentPreviewLayout: null
+    };
+
+    var DEFAULT_LAYOUTS = [
+      { id: "theater", name: "แบบเธียเตอร์ (Theater)", desc: "จัดเก้าอี้แถวเรียง ไม่ใช้โต๊ะ เหมาะฟังบรรยาย จุคนได้สูงสุด", diagramUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80", photoUrl: "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=800&q=80" },
+      { id: "classroom", name: "แบบชั้นเรียน (Classroom)", desc: "จัดโต๊ะและเก้าอี้แถวเรียง มีพื้นที่วางเอกสาร เหมาะอบรม", diagramUrl: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=600&q=80", photoUrl: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80" },
+      { id: "ushape", name: "แบบตัวยู (U-Shape)", desc: "จัดโต๊ะรูปตัว U ผู้เข้าร่วมสบตากันทั่วถึง เหมาะประชุมหารือ", diagramUrl: "https://images.unsplash.com/photo-1577412647305-991150c7d163?auto=format&fit=crop&w=600&q=80", photoUrl: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=800&q=80" },
+      { id: "boardroom", name: "แบบโต๊ะประชุมกลาง (Boardroom)", desc: "โต๊ะประชุมตัวใหญ่ล้อมรอบ เหมาะประชุมคณะผู้บริหาร", diagramUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80", photoUrl: "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=800&q=80" },
+      { id: "banquet", name: "แบบกลุ่มเวิร์กช็อป (Round Table)", desc: "จัดโต๊ะกลมหรือกลุ่มย่อย เหมาะระดมสมองเป็นทีม", diagramUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80", photoUrl: "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=800&q=80" }
+    ];
+
+    /* Fetch API Bridge สำหรับเชื่อมต่อ Google Apps Script จาก GitHub Pages */
+    function callGas(fnName) {
+      if (!GAS_API_URL || GAS_API_URL.indexOf('http') !== 0) {
+        return Promise.reject(new Error('กรุณากำหนดค่า GAS_API_URL ในไฟล์ index.html ก่อนใช้งาน'));
+      }
+      var args = Array.prototype.slice.call(arguments, 1);
+      var reqToken = STATE.token || '';
+      var reqPayload = {};
+
+      if (fnName === 'loginWithCredentials') reqPayload = { email: args[0], passcode: args[1] };
+      else if (fnName === 'registerStaffAccount' || fnName === 'checkRoomAvailability') reqPayload = args[0] || {};
+      else if (fnName === 'getRoomAvailabilityForDate') reqPayload = { date: args[0] };
+      else if (fnName === 'getBookingById') reqPayload = { bookingId: args[0] };
+      else if (fnName === 'getCalendarBookings') reqPayload = { roomId: args[0] || '' };
+      else if (fnName === 'getRooms') reqPayload = { includeInactive: Boolean(args[0]) };
+      else if (['createBooking','searchBookings','saveRoom','saveUser','saveAdminSettings','updateUserProfile'].indexOf(fnName) !== -1) { reqToken = args[0] || STATE.token; reqPayload = args[1] || {}; }
+      else if (fnName === 'cancelBooking' || fnName === 'generateBookingPdf') { reqToken = args[0] || STATE.token; reqPayload = { bookingId: args[1] }; }
+      else if (fnName === 'updateBookingStatus') { reqToken = args[0] || STATE.token; reqPayload = { bookingId: args[1], newStatus: args[2], remark: args[3] || '' }; }
+      else if (fnName === 'deleteRoom') { reqToken = args[0] || STATE.token; reqPayload = { roomId: args[1] }; }
+      else if (fnName === 'deleteUser') { reqToken = args[0] || STATE.token; reqPayload = { email: args[1] }; }
+      else if (fnName === 'updateUserStatus') { reqToken = args[0] || STATE.token; reqPayload = { email: args[1], newStatus: args[2] }; }
+      else if (fnName === 'getAuditLogs') { reqToken = args[0] || STATE.token; reqPayload = { limit: args[1] || 100 }; }
+      else { reqToken = args[0] || STATE.token; }
+
+      return fetch(GAS_API_URL, {
+        method: 'POST', mode: 'cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: fnName, token: reqToken, payload: reqPayload })
+      })
+      .then(function(r) { if (!r.ok) throw new Error('HTTP Error ' + r.status); return r.json(); })
+      .then(function(res) {
+        if (res && res.success === false && res.code !== 'CONFLICT') throw new Error(res.message || 'เกิดข้อผิดพลาด');
+        return res;
+      });
+    }
+
+    function showToast(msg, type) {
+      Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3500, timerProgressBar: true }).fire({ icon: type || 'info', title: msg });
+    }
+    function setLoading(show, text) {
+      document.getElementById('loadingText').textContent = text || 'กำลังประมวลผล...';
+      document.getElementById('loadingOverlay').classList.toggle('show', Boolean(show));
+    }
+    function escapeHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function openModal(id) { document.getElementById(id).classList.add('show'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    function toggleSidebar(open) { document.getElementById('sidebar').classList.toggle('open', Boolean(open)); document.getElementById('sidebarOverlay').classList.toggle('show', Boolean(open)); }
+    function statusBadge(st) {
+      var m = { 'รออนุมัติ':'badge-pending', 'อนุมัติ':'badge-approved', 'ไม่อนุมัติ':'badge-rejected', 'ยกเลิก':'badge-cancelled', 'เสร็จสิ้น':'badge-completed' };
+      return '<span class="badge ' + (m[st] || 'badge-cancelled') + '">' + escapeHtml(st) + '</span>';
+    }
+    function todayIso() { var d = new Date(); return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
+    function formatDisplayDateThai(s) {
+      if (!s) return '-';
+      var p = String(s).substring(0, 10).split('-');
+      if (p.length !== 3) return s;
+      var m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      return parseInt(p[2],10) + ' ' + (m[parseInt(p[1],10)-1] || '') + ' ' + (parseInt(p[0],10)+543);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var urlParams = new URLSearchParams(window.location.search);
+      window.APP_BOOT = { initialPage: urlParams.get('page') || 'dashboard', initialBookingId: urlParams.get('bookingId') || '' };
+      bootstrapApp().then(function() { if (window.APP_BOOT.initialBookingId) openBookingDetailModal(window.APP_BOOT.initialBookingId); });
+    });
+
+    function bootstrapApp() {
+      setLoading(true, 'กำลังเชื่อมต่อข้อมูล...');
+      return callGas('getInitialAppData', STATE.token).then(function(res) {
+        var d = res.data;
+        STATE.user = d.user; STATE.settings = d.settings; STATE.departments = d.departments || [];
+        STATE.rooms = d.rooms || []; STATE.layouts = (d.layouts && d.layouts.length) ? d.layouts : DEFAULT_LAYOUTS;
+        document.getElementById('orgNameLabel').textContent = STATE.settings.ORG_NAME || 'เทศบาลเมืองสมุทรสงคราม';
+        populateDropdowns(); renderBookingLayoutCards(); updateAuthUI();
+        var today = todayIso();
+        ['availCheckDate', 'bkDate'].forEach(function(id) { var el = document.getElementById(id); el.value = today; el.min = today; });
+        updateTimeSlotOptions();
+        checkAdminNotifications();
+        navigateTo(window.APP_BOOT.initialPage);
+      }).catch(function(err) { Swal.fire({ icon: 'error', title: 'เชื่อมต่อระบบไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' }); })
+      .finally(function() { setLoading(false); });
+    }
+
+    function checkAdminNotifications() {
+      if (['Admin', 'Approver'].indexOf(STATE.user.role) !== -1) {
+        callGas('searchBookings', STATE.token, { status: 'รออนุมัติ' }).then(function(r) { updatePendingBadgeCount((r.data || []).length); }).catch(function(){});
+      }
+      if (STATE.user.role === 'Admin') {
+        callGas('getUsersList', STATE.token).then(function(r) {
+          var pUsers = (r.data || []).filter(function(u) { return String(u.Status).trim() === 'รออนุมัติ'; });
+          updateAdminPendingBadge(pUsers.length);
+          if (pUsers.length > 0) {
+            Swal.fire({ icon: 'warning', title: 'มีผู้ลงทะเบียนใหม่รออนุมัติ!', text: 'พบสมาชิกใหม่ ' + pUsers.length + ' บัญชี รอการอนุมัติ', confirmButtonColor: '#0f4c81', confirmButtonText: 'ไปหน้าจัดการผู้ใช้', showCancelButton: true, cancelButtonText: 'ภายหลัง' })
+              .then(function(rs) { if (rs.isConfirmed) { navigateTo('admin'); setTimeout(function() { switchAdminTab('users', document.querySelectorAll('#view-admin .tab-btn')[3]); }, 200); } });
+          }
+        }).catch(function(){});
+      }
+    }
+
+    function populateDropdowns() {
+      var dh = '<option value="">-- เลือกหน่วยงาน --</option>' + STATE.departments.map(function(d){ return '<option value="'+escapeHtml(d)+'">'+escapeHtml(d)+'</option>'; }).join('');
+      ['bkDept','regDept','usrDept','profDept'].forEach(function(id){ var e = document.getElementById(id); if(e) e.innerHTML = dh; });
+      document.getElementById('bkRoomId').innerHTML = '<option value="">-- เลือกห้องประชุม --</option>' + STATE.rooms.map(function(r){ return '<option value="'+escapeHtml(r.RoomID)+'">'+escapeHtml(r.RoomName)+' (จุ '+r.Capacity+' คน)</option>'; }).join('');
+      var fo = '<option value="">ทุกห้องประชุม</option>' + STATE.rooms.map(function(r){ return '<option value="'+escapeHtml(r.RoomID)+'">'+escapeHtml(r.RoomName)+'</option>'; }).join('');
+      ['searchRoom','calendarRoomFilter'].forEach(function(id){ document.getElementById(id).innerHTML = fo; });
+    }
+
+    function navigateTo(view) {
+      if (['calendar','mybookings','stats','booking'].indexOf(view) !== -1 && !STATE.user.authenticated) {
+        Swal.fire({ icon: 'info', title: 'ต้องเข้าสู่ระบบก่อน', text: 'กรุณาเข้าสู่ระบบบุคลากรเพื่อใช้งานส่วนนี้', confirmButtonColor: '#0f4c81', confirmButtonText: 'เข้าสู่ระบบ / ลงทะเบียน' }).then(openLoginModal);
+        return;
+      }
+      if ((view === 'approval' || view === 'admin') && ['Admin','Approver'].indexOf(STATE.user.role) === -1) {
+        Swal.fire({ icon: 'warning', title: 'ไม่มีสิทธิ์เข้าถึง', confirmButtonColor: '#0f4c81' }); return;
+      }
+      document.querySelectorAll('.app-view').forEach(function(v){ v.classList.remove('active'); });
+      var t = document.getElementById('view-'+view); if(t) t.classList.add('active');
+      document.querySelectorAll('.nav-item, .mobile-bottom-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view') === view); });
+      var titles = { dashboard:'Dashboard ภาพรวมระบบ', booking:'จองห้องประชุมออนไลน์', approval:'อนุมัติการจองห้องประชุม', calendar:'ตารางการใช้ห้องประชุม', rooms:'ข้อมูลห้องประชุมทั้งหมด', mybookings:'รายการจองของฉัน', stats:'สถิติและค้นหารายการจอง', admin:'จัดการระบบ' };
+      document.getElementById('pageTitle').textContent = titles[view] || 'ระบบจองห้องประชุม';
+      toggleSidebar(false);
+      if (view === 'dashboard') loadDashboard(); else if (view === 'booking') onBookingDateChanged(); else if (view === 'approval') loadApprovalViewData();
+      else if (view === 'calendar') loadCalendarEvents(); else if (view === 'rooms') renderRoomsDirectory(); else if (view === 'mybookings') loadMyBookings();
+      else if (view === 'stats') runBookingSearch(); else if (view === 'admin') loadAdminView();
+    }
+
+    /* Time Slot Functions */
+    function timeToMinutes(hhmm) { var p = String(hhmm).split(':'); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+    function minutesToTime(m) { return ('0'+Math.floor(m/60)).slice(-2) + ':' + ('0'+(m%60)).slice(-2); }
+    function extractCleanTime(v, def) { var m = String(v||'').match(/(\d{1,2}):(\d{2})/); return m ? (('0'+parseInt(m[1],10)).slice(-2)+':'+('0'+parseInt(m[2],10)).slice(-2)) : (def||'07:00'); }
+    function ensureTimeOptionExists(sel, val) { for(var i=0; i<sel.options.length; i++) if(sel.options[i].value===val) return; sel.add(new Option(val+' น.', val)); }
+
+    function updateTimeSlotOptions() {
+      var sSel = document.getElementById('bkStart'), eSel = document.getElementById('bkEnd'), dIn = document.getElementById('bkDate');
+      var isToday = (dIn.value === todayIso());
+      var openM = timeToMinutes(extractCleanTime(STATE.settings.OPEN_HOUR,'07:00')), closeM = timeToMinutes(extractCleanTime(STATE.settings.CLOSE_HOUR,'20:00'));
+      var now = new Date(), nowM = now.getHours()*60 + now.getMinutes();
+      var opts = '', first = null, prev = sSel.value;
+      for (var m = openM; m < closeM; m += 30) {
+        if (isToday && m <= nowM) continue;
+        var ts = minutesToTime(m); if (!first) first = ts;
+        opts += '<option value="'+ts+'">'+ts+' น.</option>';
+      }
+      if (!first && isToday) { sSel.innerHTML = '<option value="">-- หมดเวลาจองวันนี้ --</option>'; eSel.innerHTML = '<option value="">-- เลือกไม่ได้ --</option>'; disablePastPresetButtons(true, 9999); updateDurationBadge(); triggerAutoCheckAvailability(); return; }
+      sSel.innerHTML = opts;
+      sSel.value = (prev && Array.from(sSel.options).some(function(o){return o.value===prev;})) ? prev : first;
+      rebuildEndTimeOptions(); disablePastPresetButtons(isToday, nowM);
+    }
+
+    function rebuildEndTimeOptions() {
+      var sSel = document.getElementById('bkStart'), eSel = document.getElementById('bkEnd');
+      if (!sSel.value) return;
+      var sMin = timeToMinutes(sSel.value), cMin = timeToMinutes(extractCleanTime(STATE.settings.CLOSE_HOUR,'20:00')), prev = eSel.value, opts = '';
+      for (var m = sMin + 30; m <= cMin; m += 30) { var ts = minutesToTime(m); opts += '<option value="'+ts+'">'+ts+' น.</option>'; }
+      eSel.innerHTML = opts;
+      eSel.value = (prev && timeToMinutes(prev) > sMin && Array.from(eSel.options).some(function(o){return o.value===prev;})) ? prev : minutesToTime(Math.min(cMin, sMin+60));
+      updateDurationBadge();
+    }
+
+    function onStartTimeChanged() { rebuildEndTimeOptions(); }
+    function onEndTimeChanged() { updateDurationBadge(); }
+    function updateDurationBadge() {
+      var s = document.getElementById('bkStart').value, e = document.getElementById('bkEnd').value, b = document.getElementById('bookingDurationText');
+      if (!s || !e) { b.innerHTML = '-'; return; }
+      var d = timeToMinutes(e) - timeToMinutes(s);
+      b.innerHTML = d > 0 ? '<i class="bi bi-hourglass-split"></i> รวม ' + (Math.floor(d/60)>0?Math.floor(d/60)+' ชม. ':'') + (d%60>0?(d%60)+' นาที':'') : 'เวลาไม่ถูกต้อง';
+    }
+    function applyTimePreset(s, e, btn) {
+      if (document.getElementById('bkDate').value === todayIso()) {
+        var n = new Date(); if (timeToMinutes(s) <= n.getHours()*60 + n.getMinutes()) { showToast('เวลานี้ผ่านไปแล้วสำหรับวันนี้', 'warning'); return; }
+      }
+      var sSel = document.getElementById('bkStart'), eSel = document.getElementById('bkEnd');
+      ensureTimeOptionExists(sSel, s); sSel.value = s; rebuildEndTimeOptions(); ensureTimeOptionExists(eSel, e); eSel.value = e;
+      document.querySelectorAll('.time-preset-btn').forEach(function(b){ b.classList.remove('active'); }); if(btn) btn.classList.add('active');
+      updateDurationBadge(); triggerAutoCheckAvailability();
+    }
+    function applyTimeDuration(mins, btn) {
+      var s = document.getElementById('bkStart').value; if (!s) return;
+      var eStr = minutesToTime(Math.min(timeToMinutes(extractCleanTime(STATE.settings.CLOSE_HOUR,'20:00')), timeToMinutes(s)+mins));
+      var eSel = document.getElementById('bkEnd'); ensureTimeOptionExists(eSel, eStr); eSel.value = eStr;
+      document.querySelectorAll('.time-preset-btn').forEach(function(b){ b.classList.remove('active'); }); if(btn) btn.classList.add('active');
+      updateDurationBadge(); triggerAutoCheckAvailability();
+    }
+    function disablePastPresetButtons(isToday, nowM) {
+      var p = document.querySelectorAll('.time-preset-btn');
+      if (!isToday) { p.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; }); return; }
+      if(p[0]) { p[0].disabled = nowM >= 510; p[0].style.opacity = p[0].disabled ? '0.35' : '1'; }
+      if(p[1]) { p[1].disabled = nowM >= 780; p[1].style.opacity = p[1].disabled ? '0.35' : '1'; }
+      if(p[2]) { p[2].disabled = nowM >= 510; p[2].style.opacity = p[2].disabled ? '0.35' : '1'; }
+    }
+
+    var autoCheckTimer = null;
+    function triggerAutoCheckAvailability() { clearTimeout(autoCheckTimer); autoCheckTimer = setTimeout(performLiveAvailabilityCheck, 350); }
+    function performLiveAvailabilityCheck() {
+      var r = document.getElementById('bkRoomId').value, d = document.getElementById('bkDate').value, s = document.getElementById('bkStart').value, e = document.getElementById('bkEnd').value, box = document.getElementById('liveAvailStatusBox');
+      if (!r || !d || !s || !e) { box.innerHTML = ''; return; }
+      if (timeToMinutes(s) >= timeToMinutes(e)) { box.innerHTML = '<div class="live-avail-banner busy">เวลาเริ่มต้นต้องน้อยกว่าเวลาสิ้นสุด</div>'; return; }
+      box.innerHTML = '<div class="live-avail-banner checking"><i class="bi bi-arrow-repeat"></i> กำลังตรวจสอบห้องว่าง...</div>';
+      callGas('checkRoomAvailability', { roomId: r, date: d, startTime: s, endTime: e }).then(function(res) {
+        var a = res.data;
+        if (a.available) { box.innerHTML = '<div class="live-avail-banner available"><i class="bi bi-check-circle-fill" style="font-size:20px;"></i><div><strong>ห้องว่าง พร้อมจอง!</strong> ช่วงเวลา '+s+' - '+e+' น.</div></div>'; }
+        else {
+          var h = '<div class="live-avail-banner busy"><i class="bi bi-x-circle-fill" style="font-size:20px;"></i><div><strong>ไม่สามารถจองได้:</strong> ห้องถูกจองแล้ว<br>';
+          if (a.suggestedSlots && a.suggestedSlots.length) {
+            h += '<div style="margin-top:6px;">ช่วงเวลาว่างใกล้เคียง (คลิกเลือก):<br>';
+            a.suggestedSlots.forEach(function(sl){ h += '<span class="slot-chip" onclick="applyTimePreset(\''+sl.startTime+'\',\''+sl.endTime+'\')"><i class="bi bi-clock"></i> '+sl.startTime+' - '+sl.endTime+' น.</span>'; });
+            h += '</div>';
+          }
+          box.innerHTML = h + '</div></div>';
+        }
+      }).catch(function(err){ box.innerHTML = '<div class="live-avail-banner busy">'+escapeHtml(err.message)+'</div>'; });
+    }
+
+    /* Seating Layouts */
+    function renderBookingLayoutCards() {
+      var c = document.getElementById('bookingLayoutGrid'), cur = document.getElementById('bkSeatingLayout').value;
+      c.innerHTML = STATE.layouts.map(function(l) {
+        return '<div class="layout-card '+(l.name===cur?'selected':'')+'" id="layout-card-'+l.id+'" onclick="selectSeatingLayout(\''+l.id+'\')">' +
+          '<div class="layout-media-wrap"><img id="img-layout-'+l.id+'" src="'+escapeHtml(l.diagramUrl)+'"><div class="layout-tab-pill" onclick="event.stopPropagation();"><button type="button" class="layout-tab-btn active" id="btn-dia-'+l.id+'" onclick="toggleCardImage(\''+l.id+'\',\'diagram\')">แผนผัง</button><button type="button" class="layout-tab-btn" id="btn-pho-'+l.id+'" onclick="toggleCardImage(\''+l.id+'\',\'photo\')">ภาพจริง</button></div></div>' +
+          '<div class="layout-info"><div class="layout-title">'+escapeHtml(l.name)+'</div><div class="layout-desc">'+escapeHtml(l.desc)+'</div><button type="button" class="btn-preview-layout" onclick="event.stopPropagation(); openLayoutBigPreview(\''+l.id+'\')"><i class="bi bi-zoom-in"></i> ขยายดูรูปใหญ่</button></div></div>';
+      }).join('');
+    }
+    function toggleCardImage(id, m) {
+      var l = STATE.layouts.find(function(x){return x.id===id;}); if(!l) return;
+      document.getElementById('img-layout-'+id).src = (m==='diagram'?l.diagramUrl:l.photoUrl);
+      document.getElementById('btn-dia-'+id).classList.toggle('active', m==='diagram');
+      document.getElementById('btn-pho-'+id).classList.toggle('active', m==='photo');
+    }
+    function selectSeatingLayout(id) {
+      var l = STATE.layouts.find(function(x){return x.id===id;}); if(!l) return;
+      document.getElementById('bkSeatingLayout').value = l.name;
+      document.querySelectorAll('.layout-card').forEach(function(c){ c.classList.remove('selected'); });
+      var ac = document.getElementById('layout-card-'+id); if(ac) ac.classList.add('selected');
+    }
+    function onMeetingTypeChanged() {
+      var map = { 'On-site':'classroom', 'Online':'boardroom', 'Hybrid':'ushape' };
+      var tid = map[document.getElementById('bkMeetingType').value] || 'classroom';
+      selectSeatingLayout(tid);
+      var l = STATE.layouts.find(function(x){return x.id===tid;}); if(l) showToast('แนะนำผังโต๊ะ: '+l.name, 'info');
+    }
+    function openLayoutBigPreview(id) {
+      var l = STATE.layouts.find(function(x){return x.id===id;}); if(!l) return;
+      STATE.currentPreviewLayout = l; document.getElementById('layoutPreviewTitle').textContent = 'รูปแบบ: '+l.name;
+      document.getElementById('layoutPreviewDesc').textContent = l.desc; switchPreviewMode('photo'); openModal('layoutPreviewModal');
+    }
+    function switchPreviewMode(m) {
+      if (!STATE.currentPreviewLayout) return;
+      document.getElementById('layoutBigImage').src = (m==='diagram'?STATE.currentPreviewLayout.diagramUrl:STATE.currentPreviewLayout.photoUrl);
+      document.getElementById('btnShowDiagram').className = 'btn btn-sm ' + (m==='diagram'?'btn-primary':'btn-outline');
+      document.getElementById('btnShowPhoto').className = 'btn btn-sm ' + (m==='photo'?'btn-primary':'btn-outline');
+    }
+
+    /* Auth & Profile */
+    function openLoginModal() { openModal('loginModal'); }
+    function switchAuthTab(m) {
+      document.getElementById('authTabLogin').classList.toggle('active', m==='login'); document.getElementById('authTabRegister').classList.toggle('active', m==='register');
+      document.getElementById('loginForm').style.display = m==='login'?'block':'none'; document.getElementById('registerForm').style.display = m==='register'?'block':'none';
+    }
+    function updateAuthUI() {
+      var authed = Boolean(STATE.user && STATE.user.authenticated);
+      document.getElementById('headerUserBox').style.display = authed ? 'flex' : 'none';
+      document.getElementById('sidebarUserBox').style.display = authed ? 'flex' : 'none';
+      document.getElementById('authActionBtn').style.display = authed ? 'none' : 'inline-flex';
+      var isPriv = authed && ['Admin','Approver'].indexOf(STATE.user.role) !== -1;
+      document.getElementById('navAdminBtn').style.display = isPriv ? 'flex' : 'none';
+      document.getElementById('navApprovalBtn').style.display = isPriv ? 'flex' : 'none';
+      document.querySelectorAll('.auth-required-nav, .auth-required-mobile').forEach(function(e){ e.style.display = authed ? (e.tagName==='BUTTON'?'flex':'block') : 'none'; });
+      if (authed) {
+        var initL = (STATE.user.name||'U').charAt(0).toUpperCase();
+        document.getElementById('headerUserAvatar').textContent = initL; document.getElementById('sidebarUserAvatar').textContent = initL;
+        document.getElementById('headerUserName').textContent = STATE.user.name; document.getElementById('sidebarUserName').textContent = STATE.user.name;
+        document.getElementById('headerUserDept').textContent = STATE.user.department || 'บุคลากร'; document.getElementById('sidebarUserDept').textContent = STATE.user.department || STATE.user.role;
+        var rb = document.getElementById('headerUserRole'); rb.textContent = STATE.user.role; rb.className = 'role-badge ' + STATE.user.role;
+        document.getElementById('bkName').value = STATE.user.name || ''; document.getElementById('bkEmail').value = STATE.user.email || '';
+        if (STATE.user.department) document.getElementById('bkDept').value = STATE.user.department;
+        if (STATE.user.phone) document.getElementById('bkPhone').value = STATE.user.phone;
+        document.getElementById('myBookingEmailInput').value = STATE.user.email || '';
+      }
+    }
+    function submitLogin(e) {
+      e.preventDefault(); setLoading(true, 'กำลังเข้าสู่ระบบ...');
+      callGas('loginWithCredentials', document.getElementById('loginEmail').value.trim(), document.getElementById('loginPass').value.trim())
+        .then(function(res) {
+          STATE.token = res.data.token; sessionStorage.setItem('MRB_AUTH_TOKEN', STATE.token); STATE.user = res.data.user;
+          closeModal('loginModal'); document.getElementById('loginForm').reset(); updateAuthUI(); checkAdminNotifications();
+          Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ', text: 'ยินดีต้อนรับ '+STATE.user.name, confirmButtonColor: '#0f4c81', timer: 2000 });
+          if (document.getElementById('view-dashboard').classList.contains('active')) loadDashboard();
+        }).catch(function(err){ Swal.fire({ icon: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' }); })
+        .finally(function(){ setLoading(false); });
+    }
+    function submitRegister(e) {
+      e.preventDefault(); setLoading(true, 'กำลังลงทะเบียน...');
+      callGas('registerStaffAccount', { name: document.getElementById('regName').value.trim(), department: document.getElementById('regDept').value, phone: document.getElementById('regPhone').value.trim(), email: document.getElementById('regEmail').value.trim(), passcode: document.getElementById('regPass').value.trim() })
+        .then(function(res) { closeModal('loginModal'); document.getElementById('registerForm').reset(); Swal.fire({ icon: 'success', title: 'ลงทะเบียนสำเร็จ!', text: res.message, confirmButtonColor: '#0f4c81' }); })
+        .catch(function(err){ Swal.fire({ icon: 'error', title: 'ลงทะเบียนไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' }); })
+        .finally(function(){ setLoading(false); });
+    }
+    function handleLogout() {
+      Swal.fire({ title: 'ต้องการออกจากระบบหรือไม่?', icon: 'question', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', confirmButtonText: 'ออกจากระบบ', cancelButtonText: 'ยกเลิก' })
+        .then(function(r) { if (r.isConfirmed) { callGas('logoutSession', STATE.token).catch(function(){}); sessionStorage.removeItem('MRB_AUTH_TOKEN'); STATE.token = ''; STATE.user = { authenticated: false, role: 'Guest' }; updateAuthUI(); showToast('ออกจากระบบแล้ว', 'info'); navigateTo('dashboard'); } });
+    }
+    function openProfileModal() {
+      if (!STATE.user.authenticated) return openLoginModal();
+      document.getElementById('profEmail').value = STATE.user.email; document.getElementById('profName').value = STATE.user.name;
+      document.getElementById('profDept').value = STATE.user.department; document.getElementById('profPhone').value = STATE.user.phone || ''; document.getElementById('profPass').value = '';
+      openModal('profileModal');
+    }
+    function submitProfileUpdate(e) {
+      e.preventDefault(); setLoading(true, 'กำลังบันทึก...');
+      callGas('updateUserProfile', STATE.token, { name: document.getElementById('profName').value.trim(), department: document.getElementById('profDept').value, phone: document.getElementById('profPhone').value.trim(), passcode: document.getElementById('profPass').value.trim() })
+        .then(function(res) { STATE.user.name = res.data.name; STATE.user.department = res.data.department; STATE.user.phone = res.data.phone; updateAuthUI(); closeModal('profileModal'); Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', confirmButtonColor: '#0f4c81' }); })
+        .catch(function(err){ Swal.fire({ icon: 'error', text: err.message, confirmButtonColor: '#0f4c81' }); }).finally(function(){ setLoading(false); });
+    }
+
+    /* Dashboard & Views */
+    function loadDashboard() {
+      callGas('getDashboardData', STATE.token).then(function(res) {
+        var k = res.data.kpis, c = res.data.charts, p = res.data.recentPending || [];
+        document.getElementById('kpiTotalRooms').textContent = k.totalRooms; document.getElementById('kpiAvailToday').textContent = k.availableRoomsToday;
+        document.getElementById('kpiBookedToday').textContent = k.bookedRoomsToday; document.getElementById('kpiTotalBookings').textContent = k.totalBookings;
+        document.getElementById('kpiPending').textContent = k.pendingCount; document.getElementById('kpiApproved').textContent = k.approvedCount;
+        document.getElementById('kpiCancelled').textContent = k.cancelledCount; document.getElementById('kpiMostUsed').textContent = k.mostUsedRoom;
+        document.getElementById('kpiMostUsedSub').textContent = k.mostUsedCount > 0 ? 'ใช้งาน '+k.mostUsedCount+' ครั้ง' : '';
+        updatePendingBadgeCount(k.pendingCount);
+        renderChart('chartByRoom', 'bar', c.byRoom.labels, [{ data: c.byRoom.values, backgroundColor: '#0284c7', borderRadius: 6 }]);
+        renderChart('chartByMonth', 'line', c.byMonth.labels, [{ data: c.byMonth.values, borderColor: '#0d9488', backgroundColor: 'rgba(13,148,136,0.12)', fill: true }]);
+        renderChart('chartByStatus', 'doughnut', c.byStatus.labels, [{ data: c.byStatus.values, backgroundColor: ['#16a34a','#d97706','#64748b','#dc2626'] }]);
+        var isPriv = STATE.user.authenticated && ['Admin','Approver'].indexOf(STATE.user.role) !== -1;
+        document.getElementById('dashPendingCardContainer').style.display = isPriv ? 'block' : 'none';
+        if (isPriv) {
+          document.getElementById('dashPendingBody').innerHTML = p.length ? p.map(function(b){
+            return '<tr><td><strong>'+escapeHtml(b.BookingID)+'</strong></td><td>'+formatDisplayDateThai(b.Date)+'<br><small>'+b.StartTime+'–'+b.EndTime+'</small></td><td>'+escapeHtml(b.RoomName)+'</td><td>'+escapeHtml(b.Topic)+'</td><td>'+escapeHtml(b.BookerName)+'</td><td>'+statusBadge(b.Status)+'</td><td><button class="btn btn-outline btn-sm" onclick="openBookingDetailModal(\''+b.BookingID+'\')"><i class="bi bi-eye"></i></button></td></tr>';
+          }).join('') : '<tr><td colspan="7" style="text-align:center;">ไม่มีรายการรออนุมัติ</td></tr>';
+        }
+      }).catch(function(err){ showToast(err.message, 'error'); });
+    }
+    function renderChart(id, type, labels, datasets) {
+      if (STATE.charts[id]) STATE.charts[id].destroy();
+      STATE.charts[id] = new Chart(document.getElementById(id), { type: type, data: { labels: labels, datasets: datasets }, options: { responsive: true, plugins: { legend: { display: type==='doughnut' } } } });
+    }
+
+    function onBookingDateChanged() {
+      var d = document.getElementById('availCheckDate').value; if (!d) return;
+      document.getElementById('bkDate').value = d; updateTimeSlotOptions();
+      var box = document.getElementById('roomAvailCards'); box.innerHTML = 'กำลังตรวจสอบ...';
+      callGas('getRoomAvailabilityForDate', d).then(function(res) {
+        var cur = document.getElementById('bkRoomId').value;
+        box.innerHTML = (res.data.rooms||[]).map(function(r){
+          return '<div class="avail-item '+(r.RoomID===cur?'selected':'')+'" data-room-id="'+r.RoomID+'" onclick="selectRoomFromAvail(\''+r.RoomID+'\')"><div style="display:flex; justify-content:space-between;"><strong>'+escapeHtml(r.RoomName)+'</strong><small>จุ '+r.Capacity+' คน</small></div><div class="avail-status '+(r.statusType==='FREE'?'avail-free':'avail-busy')+'">'+(r.statusType==='FREE'?'🟢 ':'🔴 ')+escapeHtml(r.summaryText)+'</div></div>';
+        }).join('');
+      });
+    }
+    function syncDateFromForm() { document.getElementById('availCheckDate').value = document.getElementById('bkDate').value; onBookingDateChanged(); }
+    function selectRoomFromAvail(id) { document.getElementById('bkRoomId').value = id; syncSelectedRoomCard(); triggerAutoCheckAvailability(); }
+    function syncSelectedRoomCard() { var id = document.getElementById('bkRoomId').value; document.querySelectorAll('.avail-item').forEach(function(e){ e.classList.toggle('selected', e.getAttribute('data-room-id')===id); }); }
+
+    function submitBookingForm(e) {
+      e.preventDefault();
+      var p = { bookerName: document.getElementById('bkName').value.trim(), department: document.getElementById('bkDept').value, phone: document.getElementById('bkPhone').value.trim(), userEmail: document.getElementById('bkEmail').value.trim(), roomId: document.getElementById('bkRoomId').value, date: document.getElementById('bkDate').value, startTime: document.getElementById('bkStart').value, endTime: document.getElementById('bkEnd').value, topic: document.getElementById('bkTopic').value.trim(), participants: Number(document.getElementById('bkParticipants').value), seatingLayout: document.getElementById('bkSeatingLayout').value, meetingType: document.getElementById('bkMeetingType').value, equipment: document.getElementById('bkEquipment').value.trim(), detail: document.getElementById('bkDetail').value.trim() };
+      if (timeToMinutes(p.startTime) >= timeToMinutes(p.endTime)) { Swal.fire({ icon: 'warning', title: 'เวลาไม่ถูกต้อง', confirmButtonColor: '#0f4c81' }); return; }
+      setLoading(true, 'กำลังบันทึกการจอง...');
+      callGas('createBooking', STATE.token, p).then(function(res) {
+        if (!res.success && res.code === 'CONFLICT') { performLiveAvailabilityCheck(); Swal.fire({ icon: 'warning', title: 'เวลาทับซ้อนกัน', text: res.message, confirmButtonColor: '#0f4c81' }); return; }
+        Swal.fire({ icon: 'success', title: 'จองสำเร็จ!', text: 'รหัสการจอง: '+res.data.booking.BookingID, confirmButtonColor: '#0f4c81', confirmButtonText: 'ดู QR Code' }).then(function(){ openBookingDetailModal(res.data.booking.BookingID); });
+        document.getElementById('bookingForm').reset(); document.getElementById('bkDate').value = p.date; updateAuthUI(); onBookingDateChanged(); renderBookingLayoutCards();
+      }).catch(function(err){ Swal.fire({ icon: 'error', title: 'จองไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' }); }).finally(function(){ setLoading(false); });
+    }
+
+    function renderRoomsDirectory() {
+      document.getElementById('roomsDirectoryGrid').innerHTML = STATE.rooms.map(function(r){
+        return '<div class="room-card"><img class="room-img" src="'+escapeHtml(r.ImageURL||'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800')+'"><div class="room-body"><div style="display:flex; justify-content:space-between;"><strong style="font-size:17px; color:var(--primary);">'+escapeHtml(r.RoomName)+'</strong><span class="badge badge-approved">'+r.Capacity+' ที่นั่ง</span></div><div class="room-meta"><i class="bi bi-geo-alt"></i> '+escapeHtml(r.Building)+' '+escapeHtml(r.Floor)+'</div><p style="font-size:13.5px; margin-bottom:8px;">'+escapeHtml(r.Description)+'</p><div style="font-size:13px; color:var(--muted); margin-bottom:12px;"><strong>อุปกรณ์:</strong> '+escapeHtml(r.Equipment)+'</div><button class="btn btn-primary btn-sm" style="margin-top:auto;" onclick="quickBookRoom(\''+r.RoomID+'\')">จองห้องนี้</button></div></div>';
+      }).join('');
+    }
+    function quickBookRoom(id) { if (!STATE.user.authenticated) return navigateTo('booking'); navigateTo('booking'); setTimeout(function(){ selectRoomFromAvail(id); }, 150); }
+
+    function loadMyBookings() {
+      var em = document.getElementById('myBookingEmailInput').value.trim();
+      setLoading(true, 'กำลังโหลด...');
+      callGas('searchBookings', STATE.token, { myOnly: true, userEmail: em }).then(function(res) {
+        var list = res.data || [];
+        document.getElementById('myBookingsBody').innerHTML = list.length ? list.map(function(b){
+          var st = b.EffectiveStatus || b.Status, canC = STATE.user.authenticated && (st==='รออนุมัติ'||st==='อนุมัติ');
+          var hint = st==='รออนุมัติ'?'<br><small style="color:#d97706;">รอตรวจสอบ</small>':(st==='อนุมัติ'?'<br><small style="color:#16a34a;">พร้อมใช้งาน</small>':(st==='ไม่อนุมัติ'?'<br><small style="color:#dc2626;">ไม่อนุมัติ</small>':''));
+          return '<tr><td><strong>'+b.BookingID+'</strong></td><td>'+formatDisplayDateThai(b.Date)+'<br><small>'+b.StartTime+'–'+b.EndTime+'</small></td><td>'+escapeHtml(b.RoomName)+'</td><td>'+escapeHtml(b.Topic)+'</td><td>'+statusBadge(st)+hint+'</td><td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" onclick="openBookingDetailModal(\''+b.BookingID+'\')"><i class="bi bi-qr-code"></i></button> '+(canC?'<button class="btn btn-danger btn-sm" onclick="cancelMyBooking(\''+b.BookingID+'\')">ยกเลิก</button>':'')+'</td></tr>';
+        }).join('') : '<tr><td colspan="6" style="text-align:center;">ไม่พบรายการจอง</td></tr>';
+      }).catch(function(err){ showToast(err.message,'error'); }).finally(function(){ setLoading(false); });
+    }
+    function cancelMyBooking(id) {
+      Swal.fire({ title: 'ยืนยันการยกเลิก?', text: id, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'ยกเลิกการจอง', cancelButtonText: 'ปิด' })
+        .then(function(r){ if(r.isConfirmed){ setLoading(true); callGas('cancelBooking', STATE.token, id).then(function(rs){ showToast(rs.message,'success'); loadMyBookings(); }).catch(function(e){ showToast(e.message,'error'); }).finally(function(){ setLoading(false); }); } });
+    }
+
+    function runBookingSearch() {
+      setLoading(true);
+      callGas('searchBookings', STATE.token, { query: document.getElementById('searchQuery').value, roomId: document.getElementById('searchRoom').value, date: document.getElementById('searchDate').value, status: document.getElementById('searchStatus').value })
+        .then(function(res){
+          var list = res.data || [];
+          document.getElementById('searchResultBody').innerHTML = list.length ? list.map(function(b){
+            return '<tr><td><strong>'+b.BookingID+'</strong></td><td>'+formatDisplayDateThai(b.Date)+'</td><td>'+b.StartTime+'–'+b.EndTime+'</td><td>'+escapeHtml(b.RoomName)+'</td><td>'+escapeHtml(b.Topic)+'</td><td>'+escapeHtml(b.BookerName)+'</td><td>'+statusBadge(b.EffectiveStatus||b.Status)+'</td><td><button class="btn btn-outline btn-sm" onclick="openBookingDetailModal(\''+b.BookingID+'\')"><i class="bi bi-eye"></i></button></td></tr>';
+          }).join('') : '<tr><td colspan="8" style="text-align:center;">ไม่พบข้อมูล</td></tr>';
+        }).finally(function(){ setLoading(false); });
+    }
+    function resetBookingSearch() { ['searchQuery','searchRoom','searchDate','searchStatus'].forEach(function(id){document.getElementById(id).value='';}); runBookingSearch(); }
+
+    function openBookingDetailModal(id) {
+      setLoading(true);
+      callGas('getBookingById', id).then(function(res) {
+        var b = res.data.booking, qrUrl = window.location.origin + window.location.pathname + '?page=detail&bookingId=' + encodeURIComponent(b.BookingID);
+        document.getElementById('detailModalBody').innerHTML = '<div style="display:flex; justify-content:space-between; margin-bottom:10px;"><strong style="font-size:17px; color:var(--primary);">'+b.BookingID+'</strong>'+statusBadge(b.EffectiveStatus||b.Status)+'</div>' +
+          '<table><tr><th style="width:130px;">ห้องประชุม</th><td>'+escapeHtml(b.RoomName)+'</td></tr><tr><th>หัวข้อ</th><td><strong>'+escapeHtml(b.Topic)+'</strong></td></tr><tr><th>ผังโต๊ะเก้าอี้</th><td><strong style="color:var(--teal);">'+escapeHtml(b.SeatingLayout||'แบบชั้นเรียน')+'</strong></td></tr><tr><th>วันที่</th><td>'+formatDisplayDateThai(b.Date)+'</td></tr><tr><th>เวลา</th><td>'+b.StartTime+' – '+b.EndTime+' น.</td></tr><tr><th>ผู้จอง</th><td>'+escapeHtml(b.BookerName)+' ('+escapeHtml(b.Department)+')</td></tr><tr><th>ผู้เข้าร่วม</th><td>'+b.Participants+' คน ('+escapeHtml(b.MeetingType||'On-site')+')</td></tr><tr><th>อุปกรณ์</th><td>'+escapeHtml(b.Equipment||'-')+'</td></tr><tr><th>รายละเอียด</th><td>'+escapeHtml(b.Detail||'-')+'</td></tr></table>' +
+          '<div style="margin-top:14px; text-align:center;"><button type="button" class="btn btn-outline btn-sm" onclick="downloadBookingPdf(\''+b.BookingID+'\')"><i class="bi bi-file-earmark-pdf-fill" style="color:#dc2626;"></i> พิมพ์ / ดาวน์โหลด PDF</button></div>' +
+          '<div class="qr-box"><div id="detailQrContainer"></div><small style="margin-top:8px; color:var(--muted);">สแกน QR Code เพื่อเปิดดูรายการนี้</small></div>';
+        openModal('detailModal');
+        new QRCode(document.getElementById('detailQrContainer'), { text: qrUrl, width: 140, height: 140, colorDark: '#0f4c81', colorLight: '#ffffff' });
+      }).catch(function(e){ showToast(e.message,'error'); }).finally(function(){ setLoading(false); });
+    }
+    function downloadBookingPdf(id) {
+      setLoading(true, 'กำลังสร้าง PDF...');
+      callGas('generateBookingPdf', STATE.token, id).then(function(res){
+        var a = document.createElement('a'); a.href = res.data.base64; a.download = res.data.fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showToast('ดาวน์โหลดสำเร็จ', 'success');
+      }).catch(function(e){ showToast(e.message, 'error'); }).finally(function(){ setLoading(false); });
+    }
+
+    function loadCalendarEvents() {
+      document.getElementById('calendarLegend').innerHTML = STATE.rooms.map(function(r){ return '<span class="legend-item"><span class="legend-dot" style="background:'+r.Color+'"></span>'+escapeHtml(r.RoomName)+'</span>'; }).join('');
+      callGas('getCalendarBookings', document.getElementById('calendarRoomFilter').value).then(function(res) {
+        if (STATE.calendarInstance) STATE.calendarInstance.destroy();
+        STATE.calendarInstance = new FullCalendar.Calendar(document.getElementById('fullCalendarEl'), {
+          locale: 'th', initialView: window.innerWidth<640?'timeGridDay':'dayGridMonth',
+          headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,timeGridDay' },
+          buttonText: { today:'วันนี้', month:'เดือน', week:'สัปดาห์', day:'วัน' },
+          events: res.data || [], eventClick: function(i){ openBookingDetailModal(i.event.extendedProps.BookingID); }
+        });
+        STATE.calendarInstance.render();
+      });
+    }
+
+    function updatePendingBadgeCount(c) { var b = document.getElementById('sidebarPendingBadge'); b.textContent = c; b.style.display = c>0?'inline-block':'none'; }
+    function updateAdminPendingBadge(c) { var b = document.getElementById('sidebarAdminBadge'); b.textContent = c; b.style.display = c>0?'inline-block':'none'; }
+
+    function loadApprovalViewData() {
+      callGas('searchBookings', STATE.token, { status: 'รออนุมัติ' }).then(function(res) {
+        var list = res.data || []; updatePendingBadgeCount(list.length);
+        document.getElementById('standaloneApprovalBody').innerHTML = list.length ? list.map(function(b){
+          return '<tr><td><strong>'+b.BookingID+'</strong></td><td>'+formatDisplayDateThai(b.Date)+'<br><small>'+b.StartTime+'–'+b.EndTime+'</small></td><td>'+escapeHtml(b.RoomName)+'</td><td>'+escapeHtml(b.Topic)+'</td><td>'+escapeHtml(b.BookerName)+'<br><small>'+escapeHtml(b.Department)+'</small></td><td>'+b.Participants+'</td><td style="white-space:nowrap;"><button class="btn btn-success btn-sm" onclick="approveFromView(\''+b.BookingID+'\')">อนุมัติ</button> <button class="btn btn-danger btn-sm" onclick="rejectFromView(\''+b.BookingID+'\')">ไม่อนุมัติ</button> <button class="btn btn-light btn-sm" onclick="openBookingDetailModal(\''+b.BookingID+'\')"><i class="bi bi-eye"></i></button></td></tr>';
+        }).join('') : '<tr><td colspan="7" style="text-align:center;">ไม่มีรายการรออนุมัติ</td></tr>';
+      });
+    }
+    function approveFromView(id) { changeBookingStatus(id, 'อนุมัติ', ''); setTimeout(loadApprovalViewData, 800); }
+    function rejectFromView(id) { rejectBookingPrompt(id, loadApprovalViewData); }
+
+    /* Admin Tab Management */
+    function loadAdminView() { document.querySelectorAll('.admin-only-tab').forEach(function(e){ e.style.display = STATE.user.role==='Admin'?'inline-flex':'none'; }); loadAdminBookings(); }
+    function switchAdminTab(t, btn) {
+      document.querySelectorAll('#view-admin .tab-btn').forEach(function(b){b.classList.remove('active');}); document.querySelectorAll('#view-admin .tab-panel').forEach(function(p){p.classList.remove('active');});
+      if(btn) btn.classList.add('active'); document.getElementById('admin-tab-'+t).classList.add('active');
+      if(t==='approval'||t==='allbookings') loadAdminBookings(); else if(t==='rooms') loadAdminRooms(); else if(t==='users') loadAdminUsers(); else if(t==='settings') loadAdminSettings(); else if(t==='audit') loadAdminAudit();
+    }
+    function loadAdminBookings() {
+      callGas('searchBookings', STATE.token, {}).then(function(res) {
+        var list = res.data || [], pend = list.filter(function(b){return b.Status==='รออนุมัติ';}); updatePendingBadgeCount(pend.length);
+        document.getElementById('adminApprovalBody').innerHTML = pend.length ? pend.map(function(b){
+          return '<tr><td><strong>'+b.BookingID+'</strong></td><td>'+formatDisplayDateThai(b.Date)+'<br><small>'+b.StartTime+'–'+b.EndTime+'</small></td><td>'+escapeHtml(b.RoomName)+'</td><td>'+escapeHtml(b.Topic)+'</td><td>'+escapeHtml(b.BookerName)+'</td><td>'+b.Participants+'</td><td><button class="btn btn-success btn-sm" onclick="changeBookingStatus(\''+b.BookingID+'\',\'อนุมัติ\')">อนุมัติ</button> <button class="btn btn-danger btn-sm" onclick="rejectBookingPrompt(\''+b.BookingID+'\')">ไม่อนุมัติ</button></td></tr>';
+        }).join('') : '<tr><td colspan="7" style="text-align:center;">ไม่มีรายการรออนุมัติ</td></tr>';
+        document.getElementById('adminAllBookingsBody').innerHTML = list.map(function(b){
+          return '<tr><td><strong>'+b.BookingID+'</strong></td><td>'+formatDisplayDateThai(b.Date)+' '+b.StartTime+'–'+b.EndTime+'</td><td>'+escapeHtml(b.RoomName)+'</td><td>'+escapeHtml(b.Topic)+'</td><td>'+escapeHtml(b.BookerName)+'</td><td>'+statusBadge(b.EffectiveStatus||b.Status)+'</td><td><select style="width:125px; padding:4px;" onchange="if(this.value){changeBookingStatus(\''+b.BookingID+'\',this.value);this.value=\'\';}"><option value="">-- เปลี่ยน --</option><option value="อนุมัติ">อนุมัติ</option><option value="ไม่อนุมัติ">ไม่อนุมัติ</option><option value="ยกเลิก">ยกเลิก</option><option value="เสร็จสิ้น">เสร็จสิ้น</option></select></td></tr>';
+        }).join('');
+      });
+    }
+    function changeBookingStatus(id, st, rem) {
+      setLoading(true); callGas('updateBookingStatus', STATE.token, id, st, rem||'').then(function(r){ Swal.fire({icon:'success', title:r.message, timer:1800, confirmButtonColor:'#0f4c81'}); loadAdminBookings(); }).catch(function(e){ Swal.fire({icon:'error', text:e.message}); }).finally(function(){ setLoading(false); });
+    }
+    function rejectBookingPrompt(id, cb) {
+      Swal.fire({ title:'เหตุผลที่ไม่อนุมัติ', input:'textarea', showCancelButton:true, confirmButtonColor:'#dc2626', confirmButtonText:'ยืนยัน', cancelButtonText:'ยกเลิก' })
+        .then(function(r){ if(r.isConfirmed){ changeBookingStatus(id,'ไม่อนุมัติ',r.value||''); if(cb) setTimeout(cb, 800); } });
+    }
+    function loadAdminRooms() {
+      callGas('getRooms', true).then(function(res){
+        window._adminRoomsCache = res.data || [];
+        document.getElementById('adminRoomsBody').innerHTML = window._adminRoomsCache.map(function(r){
+          return '<tr><td><img src="'+escapeHtml(r.ImageURL)+'" style="width:50px; height:36px; object-fit:cover; border-radius:6px;"></td><td>'+r.RoomID+'</td><td><strong>'+escapeHtml(r.RoomName)+'</strong></td><td>'+escapeHtml(r.Building)+' '+escapeHtml(r.Floor)+'</td><td>'+r.Capacity+'</td><td>'+r.Status+'</td><td><button class="btn btn-outline btn-sm" onclick="openRoomModal(\''+r.RoomID+'\')"><i class="bi bi-pencil"></i></button> <button class="btn btn-danger btn-sm" onclick="removeRoom(\''+r.RoomID+'\')"><i class="bi bi-trash"></i></button></td></tr>';
+        }).join('');
+      });
+    }
+    function openRoomModal(id) {
+      STATE.pendingRoomImage = null; document.getElementById('roomForm').reset(); document.getElementById('rmPreviewWrap').style.display = 'none';
+      if (id && window._adminRoomsCache) {
+        var r = window._adminRoomsCache.find(function(x){return x.RoomID===id;});
+        if(r){ document.getElementById('rmId').value=r.RoomID; document.getElementById('rmName').value=r.RoomName; document.getElementById('rmBuilding').value=r.Building; document.getElementById('rmFloor').value=r.Floor; document.getElementById('rmCapacity').value=r.Capacity; document.getElementById('rmStatus').value=r.Status; document.getElementById('rmResponsible').value=r.Responsible; document.getElementById('rmColor').value=r.Color||'#0284c7'; document.getElementById('rmEquipment').value=r.Equipment; document.getElementById('rmDesc').value=r.Description; document.getElementById('rmImageUrl').value=r.ImageURL; updateRoomImagePreview(r.ImageURL); }
+      } else { document.getElementById('rmId').value = ''; }
+      openModal('roomModal');
+    }
+    function handleRoomImageSelect(e) {
+      var f = e.target.files[0]; if(!f) return;
+      var rd = new FileReader(); rd.onload = function(ev){ var img = new Image(); img.onload = function(){
+        var s = img.width>1200 ? 1200/img.width : 1, c = document.createElement('canvas'); c.width=img.width*s; c.height=img.height*s;
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height); var comp = c.toDataURL('image/jpeg',0.82);
+        STATE.pendingRoomImage = { base64: comp, fileName: f.name, mimeType: 'image/jpeg' }; updateRoomImagePreview(comp);
+      }; img.src = ev.target.result; }; rd.readAsDataURL(f);
+    }
+    function updateRoomImagePreview(u) { var w=document.getElementById('rmPreviewWrap'); if(u){document.getElementById('rmPreviewImg').src=u; w.style.display='block';} else w.style.display='none'; }
+    function submitRoomForm(e) {
+      e.preventDefault(); setLoading(true);
+      var p = { RoomID:document.getElementById('rmId').value, RoomName:document.getElementById('rmName').value, Building:document.getElementById('rmBuilding').value, Floor:document.getElementById('rmFloor').value, Capacity:Number(document.getElementById('rmCapacity').value), Status:document.getElementById('rmStatus').value, Responsible:document.getElementById('rmResponsible').value, Color:document.getElementById('rmColor').value, Equipment:document.getElementById('rmEquipment').value, Description:document.getElementById('rmDesc').value, ImageURL:document.getElementById('rmImageUrl').value };
+      if(STATE.pendingRoomImage){ p.imageBase64=STATE.pendingRoomImage.base64; p.imageFileName=STATE.pendingRoomImage.fileName; p.imageMimeType=STATE.pendingRoomImage.mimeType; }
+      callGas('saveRoom', STATE.token, p).then(function(r){ showToast(r.message,'success'); closeModal('roomModal'); loadAdminRooms(); return callGas('getRooms',false); }).then(function(rr){ STATE.rooms=rr.data||[]; populateDropdowns(); }).catch(function(err){ showToast(err.message,'error'); }).finally(function(){ setLoading(false); });
+    }
+    function removeRoom(id) { Swal.fire({title:'ยืนยันลบห้อง?',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626'}).then(function(r){if(r.isConfirmed){setLoading(true);callGas('deleteRoom',STATE.token,id).then(function(){loadAdminRooms();}).finally(function(){setLoading(false);});}}); }
+    function loadAdminUsers() {
+      callGas('getUsersList', STATE.token).then(function(res){
+        window._adminUsersCache = res.data || [];
+        var pendC = window._adminUsersCache.filter(function(x){return String(x.Status).trim()==='รออนุมัติ';}).length;
+        updateAdminPendingBadge(pendC);
+        document.getElementById('adminUsersBody').innerHTML = window._adminUsersCache.map(function(u){
+          var isP = String(u.Status).trim()==='รออนุมัติ';
+          return '<tr><td>'+escapeHtml(u.Email)+'</td><td>'+escapeHtml(u.Name)+'</td><td>'+escapeHtml(u.Department)+'</td><td><span class="badge badge-approved">'+u.Role+'</span></td><td><span class="badge '+(isP?'badge-pending':'badge-completed')+'">'+u.Status+'</span></td><td>'+(isP?'<button class="btn btn-success btn-sm" onclick="approveUserAccount(\''+escapeHtml(u.Email)+'\')">อนุมัติ</button> ':'')+'<button class="btn btn-outline btn-sm" onclick="openUserModal(\''+escapeHtml(u.Email)+'\')"><i class="bi bi-pencil"></i></button> <button class="btn btn-danger btn-sm" onclick="removeUser(\''+escapeHtml(u.Email)+'\')"><i class="bi bi-trash"></i></button></td></tr>';
+        }).join('');
+      });
+    }
+    function approveUserAccount(email) { setLoading(true); callGas('updateUserStatus', STATE.token, email, 'Active').then(function(r){ Swal.fire({icon:'success',title:'อนุมัติบัญชีสำเร็จ',timer:1800}); loadAdminUsers(); }).finally(function(){ setLoading(false); }); }
+    function openUserModal(em) {
+      document.getElementById('userForm').reset(); document.getElementById('usrEmail').readOnly = Boolean(em);
+      if(em && window._adminUsersCache){ var u=window._adminUsersCache.find(function(x){return x.Email===em;}); if(u){document.getElementById('usrEmail').value=u.Email;document.getElementById('usrName').value=u.Name;document.getElementById('usrDept').value=u.Department;document.getElementById('usrRole').value=u.Role;document.getElementById('usrStatus').value=u.Status;} }
+      openModal('userModal');
+    }
+    function submitUserForm(e) {
+      e.preventDefault(); setLoading(true);
+      callGas('saveUser', STATE.token, { Email:document.getElementById('usrEmail').value, Name:document.getElementById('usrName').value, Department:document.getElementById('usrDept').value, Role:document.getElementById('usrRole').value, Status:document.getElementById('usrStatus').value, Passcode:document.getElementById('usrPasscode').value })
+        .then(function(r){ showToast(r.message,'success'); closeModal('userModal'); loadAdminUsers(); }).finally(function(){ setLoading(false); });
+    }
+    function removeUser(em) { Swal.fire({title:'ยืนยันลบผู้ใช้?',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626'}).then(function(r){if(r.isConfirmed){setLoading(true);callGas('deleteUser',STATE.token,em).then(function(){loadAdminUsers();}).finally(function(){setLoading(false);});}}); }
+    function loadAdminSettings() {
+      callGas('getAdminSettings', STATE.token).then(function(res){
+        var s = res.data || {}; document.getElementById('setOrgName').value=s.ORG_NAME||''; document.getElementById('setOpenHour').value=extractCleanTime(s.OPEN_HOUR,'07:00'); document.getElementById('setCloseHour').value=extractCleanTime(s.CLOSE_HOUR,'20:00');
+        ['setRequireApproval:REQUIRE_APPROVAL','setCalendarSync:ENABLE_CALENDAR_SYNC','setChatNotify:ENABLE_CHAT_NOTIFY','setRemind1D:REMINDER_1D','setRemind2H:REMINDER_2H','setRemind30M:REMINDER_30M'].forEach(function(pair){
+          var p=pair.split(':'); document.getElementById(p[0]).value = String(s[p[1]]||'TRUE').toUpperCase()==='TRUE'?'TRUE':'FALSE';
+        });
+      });
+    }
+    function submitAdminSettings(e) {
+      e.preventDefault(); setLoading(true);
+      var p = { ORG_NAME:document.getElementById('setOrgName').value.trim(), OPEN_HOUR:document.getElementById('setOpenHour').value, CLOSE_HOUR:document.getElementById('setCloseHour').value, REQUIRE_APPROVAL:document.getElementById('setRequireApproval').value, ENABLE_CALENDAR_SYNC:document.getElementById('setCalendarSync').value, ENABLE_CHAT_NOTIFY:document.getElementById('setChatNotify').value, REMINDER_1D:document.getElementById('setRemind1D').value, REMINDER_2H:document.getElementById('setRemind2H').value, REMINDER_30M:document.getElementById('setRemind30M').value };
+      callGas('saveAdminSettings', STATE.token, p).then(function(){ STATE.settings.OPEN_HOUR=p.OPEN_HOUR; STATE.settings.CLOSE_HOUR=p.CLOSE_HOUR; updateTimeSlotOptions(); Swal.fire({icon:'success',title:'บันทึกการตั้งค่าสำเร็จ',timer:1800}); }).finally(function(){ setLoading(false); });
+    }
+    function loadAdminAudit() {
+      callGas('getAuditLogs', STATE.token, 100).then(function(res){
+        document.getElementById('adminAuditBody').innerHTML = (res.data||[]).map(function(l){ return '<tr><td>'+l.Timestamp+'</td><td>'+escapeHtml(l.UserEmail)+'</td><td>'+l.Role+'</td><td><strong>'+l.Action+'</strong></td><td>'+escapeHtml(l.TargetID)+'</td><td>'+escapeHtml(l.Details)+'</td></tr>'; }).join('');
+      });
+    }
+  </script>
 </body>
 </html>
