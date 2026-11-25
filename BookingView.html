@@ -1,0 +1,210 @@
+<!-- View: Booking (หน้าจองห้องประชุม) -->
+<section class="app-view" id="view-booking">
+  <!-- ขั้นตอนที่ 1: ตรวจสอบสถานะห้องว่างอัตโนมัติรายวัน -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-calendar2-check"></i> 1. ตรวจสอบสถานะห้องว่างอัตโนมัติประจำวัน</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <label for="availCheckDate" style="margin:0; font-size:14px; font-weight:600;">วันที่ใช้งาน:</label>
+        <input type="date" id="availCheckDate" style="width:auto; font-weight:600;" onchange="onBookingDateChanged()">
+      </div>
+    </div>
+    <div class="avail-list" id="roomAvailCards">
+      <div style="color:var(--muted); padding:10px 0;">กำลังโหลดสถานะห้องประชุม...</div>
+    </div>
+  </div>
+
+  <!-- ขั้นตอนที่ 2: กรอกข้อมูล เลือกเวลา และรูปแบบโต๊ะเก้าอี้ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-pencil-square"></i> 2. กรอกข้อมูลการจองและกำหนดรูปแบบห้องประชุม</div>
+    </div>
+
+    <form id="bookingForm" onsubmit="submitBookingForm(event)">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ชื่อผู้จอง <span class="req">*</span></label>
+          <input type="text" id="bkName" required placeholder="เช่น นายสมชาย ใจดี">
+        </div>
+        <div class="form-group">
+          <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
+          <select id="bkDept" required></select>
+        </div>
+        <div class="form-group">
+          <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ <span class="req">*</span></label>
+          <input type="tel" id="bkPhone" required placeholder="เช่น 081-234-5678">
+          <small style="color:var(--muted); font-size:11.5px;">ดึงค่าเริ่มต้นจากโปรไฟล์ส่วนตัวอัตโนมัติ (แก้ไขได้)</small>
+        </div>
+        <div class="form-group">
+          <label>อีเมลผู้ใช้งาน <span class="req">*</span></label>
+          <input type="email" id="bkEmail" required placeholder="name@samutsongkhram.go.th">
+        </div>
+
+        <div class="form-group">
+          <label>ห้องประชุมที่ต้องการจอง <span class="req">*</span></label>
+          <select id="bkRoomId" required onchange="syncSelectedRoomCard(); triggerAutoCheckAvailability();"></select>
+        </div>
+        <div class="form-group">
+          <label>วันที่ใช้งาน <span class="req">*</span></label>
+          <input type="date" id="bkDate" required onchange="syncDateFromForm(); triggerAutoCheckAvailability();">
+        </div>
+
+        <!-- กล่องเลือกช่วงเวลาปรับปรุงใหม่ (Quick Presets + Dropdown 30 นาที + Real-time Status) -->
+        <div class="form-group full" style="background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+            <label style="margin:0; font-size:14px;"><i class="bi bi-clock-history"></i> กำหนดช่วงเวลาการใช้งานห้องประชุม <span class="req">*</span></label>
+            <div id="bookingDurationText" class="duration-badge"><i class="bi bi-hourglass-split"></i> รวม 3 ชม. 30 นาที</div>
+          </div>
+
+          <!-- ปุ่มลัดเลือกเวลาสำเร็จรูป (Quick Presets) -->
+          <div class="time-preset-wrap">
+            <button type="button" class="time-preset-btn active" onclick="applyTimePreset('08:30', '12:00', this)">
+              <i class="bi bi-sun"></i> เช้า (08:30 - 12:00)
+            </button>
+            <button type="button" class="time-preset-btn" onclick="applyTimePreset('13:00', '16:30', this)">
+              <i class="bi bi-brightness-high"></i> บ่าย (13:00 - 16:30)
+            </button>
+            <button type="button" class="time-preset-btn" onclick="applyTimePreset('08:30', '16:30', this)">
+              <i class="bi bi-calendar-range"></i> เต็มวัน (08:30 - 16:30)
+            </button>
+            <button type="button" class="time-preset-btn" onclick="applyTimeDuration(60, this)">
+              <i class="bi bi-stopwatch"></i> 1 ชม.
+            </button>
+            <button type="button" class="time-preset-btn" onclick="applyTimeDuration(120, this)">
+              <i class="bi bi-stopwatch"></i> 2 ชม.
+            </button>
+          </div>
+
+          <!-- Dropdown เลือกเวลาเริ่มต้น - สิ้นสุด ช่วงละ 30 นาที -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div>
+              <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาเริ่มต้น</small>
+              <select id="bkStart" required onchange="onStartTimeChanged(); triggerAutoCheckAvailability();"></select>
+            </div>
+            <div>
+              <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาสิ้นสุด</small>
+              <select id="bkEnd" required onchange="onEndTimeChanged(); triggerAutoCheckAvailability();"></select>
+            </div>
+          </div>
+
+          <!-- การ์ดแจ้งสถานะห้องว่างแบบ Real-time ทันที (Auto-check) -->
+          <div id="liveAvailStatusBox"></div>
+        </div>
+
+        <div class="form-group full">
+          <label>หัวข้อการประชุม / กิจกรรม <span class="req">*</span></label>
+          <input type="text" id="bkTopic" required placeholder="ระบุหัวข้อหรือชื่อการประชุม">
+        </div>
+
+        <div class="form-group">
+          <label>จำนวนผู้เข้าร่วม (คน) <span class="req">*</span></label>
+          <input type="number" id="bkParticipants" required min="1" value="10">
+        </div>
+        <div class="form-group">
+          <label>รูปแบบการประชุม <span class="req">*</span></label>
+          <!-- ผูกการเปลี่ยนรูปแบบการประชุมเข้ากับผังโต๊ะเริ่มต้นอัตโนมัติ -->
+          <select id="bkMeetingType" required onchange="onMeetingTypeChanged()">
+            <option value="On-site">On-site (ประชุม ณ ห้องประชุม)</option>
+            <option value="Online">Online (ประชุมออนไลน์)</option>
+            <option value="Hybrid">Hybrid (ผสมผสาน On-site + Online)</option>
+          </select>
+        </div>
+
+        <!-- ส่วนเลือกรูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม -->
+        <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:14px; margin-top:6px;">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="bi bi-grid-3x3-gap"></i> รูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม <span class="req">*</span></span>
+            <span style="font-size:12px; color:var(--muted); font-weight:normal;">(คลิกเลือกการ์ด หรือสลับดูแผนผัง/ภาพจริงได้)</span>
+          </label>
+          <input type="hidden" id="bkSeatingLayout" required value="แบบชั้นเรียน (Classroom)">
+          
+          <div class="layout-grid" id="bookingLayoutGrid">
+            <!-- JavaScript จะเรนเดอร์การ์ดรูปแบบโต๊ะเก้าอี้ให้อัตโนมัติ -->
+          </div>
+        </div>
+
+        <div class="form-group full" style="margin-top:6px;">
+          <label>อุปกรณ์ที่ต้องการเพิ่มเติม</label>
+          <input type="text" id="bkEquipment" placeholder="เช่น ไมโครโฟนตั้งโต๊ะ 6 ตัว, สายต่อ HDMI, กระดานฟลิปชาร์ท">
+        </div>
+        <div class="form-group full">
+          <label>รายละเอียดเพิ่มเติม / ข้อความถึงผู้ดูแล</label>
+          <textarea id="bkDetail" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม เช่น การจัดเตรียมเครื่องดื่ม หรืออาหารว่าง (ถ้ามี)"></textarea>
+        </div>
+      </div>
+
+      <!-- กล่องสำรองข้อความผลการตรวจสอบห้องว่าง -->
+      <div id="availabilityCheckBox"></div>
+
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;">
+        <button type="submit" class="btn btn-primary" id="btnSubmitBooking" style="padding:11px 24px;">
+          <i class="bi bi-check2-circle"></i> ยืนยันการจองห้องประชุม
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- View: Rooms Directory (ทำเนียบข้อมูลห้องประชุมทั้งหมด) -->
+<section class="app-view" id="view-rooms">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-door-open"></i> ข้อมูลห้องประชุมทั้งหมด เทศบาลเมืองสมุทรสงคราม</div>
+    </div>
+    <div class="grid-3" id="roomsDirectoryGrid">
+      <div style="color:var(--muted); padding:10px 0;">กำลังโหลดข้อมูลห้องประชุม...</div>
+    </div>
+  </div>
+</section>
+
+<!-- View: My Bookings (รายการจองของฉัน) -->
+<section class="app-view" id="view-mybookings">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-journal-check"></i> รายการจองของฉัน</div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input type="email" id="myBookingEmailInput" placeholder="ระบุอีเมลเพื่อค้นหา (กรณีไม่ได้เข้าสู่ระบบ)" style="width:260px;">
+        <button class="btn btn-primary btn-sm" onclick="loadMyBookings()">
+          <i class="bi bi-search"></i> ค้นหารายการจอง
+        </button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>สถานะ</th><th>ดำเนินการ</th>
+          </tr>
+        </thead>
+        <tbody id="myBookingsBody">
+          <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:16px;">กรุณาเข้าสู่ระบบ หรือกรอกอีเมลเพื่อดูรายการจองของคุณ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Modal สำหรับขยายดูภาพแผนผัง & ภาพห้องตัวอย่างขนาดใหญ่ -->
+<div class="modal-backdrop" id="layoutPreviewModal">
+  <div class="modal-box" style="max-width:680px;">
+    <div class="modal-header">
+      <h3 id="layoutPreviewTitle"><i class="bi bi-grid-3x3-gap"></i> ตัวอย่างรูปแบบการจัดโต๊ะเก้าอี้</h3>
+      <button class="modal-close" onclick="closeModal('layoutPreviewModal')">&times;</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <div style="display:flex; justify-content:center; gap:10px; margin-bottom:14px;">
+        <button type="button" class="btn btn-primary btn-sm" id="btnShowPhoto" onclick="switchPreviewMode('photo')">
+          <i class="bi bi-camera"></i> ดูภาพห้องตัวอย่างจริง (Real Photo)
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btnShowDiagram" onclick="switchPreviewMode('diagram')">
+          <i class="bi bi-diagram-2"></i> ดูภาพแผนผัง (Layout Diagram)
+        </button>
+      </div>
+      <img id="layoutBigImage" src="" alt="ภาพตัวอย่างรูปแบบโต๊ะเก้าอี้" style="width:100%; max-height:380px; object-fit:contain; border-radius:10px; border:1px solid var(--border); background:#0f172a;">
+      <p id="layoutPreviewDesc" style="margin-top:12px; font-size:14px; color:var(--text); line-height:1.5;"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light" onclick="closeModal('layoutPreviewModal')">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
