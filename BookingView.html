@@ -1,210 +1,349 @@
-<!-- View: Booking (หน้าจองห้องประชุม) -->
-<section class="app-view" id="view-booking">
-  <!-- ขั้นตอนที่ 1: ตรวจสอบสถานะห้องว่างอัตโนมัติรายวัน -->
+<!-- View: Admin & Management -->
+<section class="app-view" id="view-admin">
   <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="bi bi-calendar2-check"></i> 1. ตรวจสอบสถานะห้องว่างอัตโนมัติประจำวัน</div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <label for="availCheckDate" style="margin:0; font-size:14px; font-weight:600;">วันที่ใช้งาน:</label>
-        <input type="date" id="availCheckDate" style="width:auto; font-weight:600;" onchange="onBookingDateChanged()">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchAdminTab('approval', this)">
+        <i class="bi bi-check2-square"></i> อนุมัติการจอง
+      </button>
+      <button class="tab-btn" onclick="switchAdminTab('allbookings', this)">
+        <i class="bi bi-list-check"></i> จัดการการจองทั้งหมด
+      </button>
+      <button class="tab-btn admin-only-tab" onclick="switchAdminTab('rooms', this)">
+        <i class="bi bi-building-gear"></i> จัดการห้องประชุม &amp; ผังโต๊ะ
+      </button>
+      <button class="tab-btn admin-only-tab" onclick="switchAdminTab('users', this)">
+        <i class="bi bi-people"></i> ผู้ใช้งาน &amp; สิทธิ์
+      </button>
+      <button class="tab-btn admin-only-tab" onclick="switchAdminTab('settings', this)">
+        <i class="bi bi-gear"></i> ตั้งค่าระบบ
+      </button>
+      <button class="tab-btn admin-only-tab" onclick="switchAdminTab('audit', this)">
+        <i class="bi bi-shield-check"></i> Audit Log
+      </button>
+    </div>
+
+    <!-- Tab 1: Approval Queue (คิวรออนุมัติ) -->
+    <div class="tab-panel active" id="admin-tab-approval">
+      <div class="card-header" style="margin-bottom:8px;">
+        <div style="font-weight:700; color:var(--primary);"><i class="bi bi-hourglass-split"></i> รายการจองห้องประชุมที่รอการพิจารณาอนุมัติ</div>
+        <button class="btn btn-outline btn-sm" onclick="loadAdminBookings()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง / กอง</th><th>จำนวน</th><th>ดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody id="adminApprovalBody">
+            <tr><td colspan="7" style="text-align:center; color:var(--muted);">กำลังโหลดรายการ...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="avail-list" id="roomAvailCards">
-      <div style="color:var(--muted); padding:10px 0;">กำลังโหลดสถานะห้องประชุม...</div>
+
+    <!-- Tab 2: All Bookings Management (จัดการการจองทั้งหมด) -->
+    <div class="tab-panel" id="admin-tab-allbookings">
+      <div class="card-header" style="margin-bottom:8px;">
+        <div style="font-weight:700; color:var(--primary);"><i class="bi bi-card-checklist"></i> ประวัติและสถานะการจองทั้งหมด</div>
+        <button class="btn btn-outline btn-sm" onclick="loadAdminBookings()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อ</th><th>ผู้จอง</th><th>สถานะ</th><th>เปลี่ยนสถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="adminAllBookingsBody">
+            <tr><td colspan="7" style="text-align:center; color:var(--muted);">กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <!-- ขั้นตอนที่ 2: กรอกข้อมูล เลือกเวลา และรูปแบบโต๊ะเก้าอี้ -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="bi bi-pencil-square"></i> 2. กรอกข้อมูลการจองและกำหนดรูปแบบห้องประชุม</div>
+    <!-- Tab 3: Rooms Management (จัดการห้องประชุมและผังโต๊ะ) -->
+    <div class="tab-panel" id="admin-tab-rooms">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+        <div style="font-size:14px; color:var(--muted);">
+          <i class="bi bi-info-circle"></i> กำหนดข้อมูลห้อง ความจุ อุปกรณ์ และรูปแบบผังโต๊ะเก้าอี้ที่ห้องรองรับ
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openRoomModal()">
+          <i class="bi bi-plus-lg"></i> เพิ่มห้องประชุมใหม่
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>รูป</th><th>รหัส</th><th>ชื่อห้องประชุม</th><th>อาคาร / ชั้น</th><th>ความจุ</th><th>สถานะ</th><th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="adminRoomsBody">
+            <tr><td colspan="7" style="text-align:center; color:var(--muted);">กำลังโหลดข้อมูลห้องประชุม...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <form id="bookingForm" onsubmit="submitBookingForm(event)">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>ชื่อผู้จอง <span class="req">*</span></label>
-          <input type="text" id="bkName" required placeholder="เช่น นายสมชาย ใจดี">
+    <!-- Tab 4: Users Management (จัดการผู้ใช้งาน) -->
+    <div class="tab-panel" id="admin-tab-users">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+        <div style="font-size:14px; color:var(--muted);">
+          <i class="bi bi-info-circle"></i> กำหนดบทบาทสิทธิ์ (Admin, Approver, User) ของบุคลากรเทศบาล
         </div>
-        <div class="form-group">
-          <label>หน่วยงาน (กอง/สำนัก) <span class="req">*</span></label>
-          <select id="bkDept" required></select>
-        </div>
-        <div class="form-group">
-          <label><i class="bi bi-telephone"></i> เบอร์โทรศัพท์ติดต่อ <span class="req">*</span></label>
-          <input type="tel" id="bkPhone" required placeholder="เช่น 081-234-5678">
-          <small style="color:var(--muted); font-size:11.5px;">ดึงค่าเริ่มต้นจากโปรไฟล์ส่วนตัวอัตโนมัติ (แก้ไขได้)</small>
-        </div>
-        <div class="form-group">
-          <label>อีเมลผู้ใช้งาน <span class="req">*</span></label>
-          <input type="email" id="bkEmail" required placeholder="name@samutsongkhram.go.th">
-        </div>
+        <button class="btn btn-primary btn-sm" onclick="openUserModal()">
+          <i class="bi bi-person-plus"></i> เพิ่มผู้ใช้งาน
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+               <th>อีเมล</th><th>ชื่อ-นามสกุล</th><th>หน่วยงาน (กอง/สำนัก)</th><th>สิทธิ์</th><th>สถานะบัญชี</th><th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="adminUsersBody">
+            <tr><td colspan="6" style="text-align:center; color:var(--muted);">กำลังโหลดรายชื่อผู้ใช้...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-        <div class="form-group">
-          <label>ห้องประชุมที่ต้องการจอง <span class="req">*</span></label>
-          <select id="bkRoomId" required onchange="syncSelectedRoomCard(); triggerAutoCheckAvailability();"></select>
-        </div>
-        <div class="form-group">
-          <label>วันที่ใช้งาน <span class="req">*</span></label>
-          <input type="date" id="bkDate" required onchange="syncDateFromForm(); triggerAutoCheckAvailability();">
-        </div>
-
-        <!-- กล่องเลือกช่วงเวลาปรับปรุงใหม่ (Quick Presets + Dropdown 30 นาที + Real-time Status) -->
-        <div class="form-group full" style="background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
-            <label style="margin:0; font-size:14px;"><i class="bi bi-clock-history"></i> กำหนดช่วงเวลาการใช้งานห้องประชุม <span class="req">*</span></label>
-            <div id="bookingDurationText" class="duration-badge"><i class="bi bi-hourglass-split"></i> รวม 3 ชม. 30 นาที</div>
-          </div>
-
-          <!-- ปุ่มลัดเลือกเวลาสำเร็จรูป (Quick Presets) -->
-          <div class="time-preset-wrap">
-            <button type="button" class="time-preset-btn active" onclick="applyTimePreset('08:30', '12:00', this)">
-              <i class="bi bi-sun"></i> เช้า (08:30 - 12:00)
-            </button>
-            <button type="button" class="time-preset-btn" onclick="applyTimePreset('13:00', '16:30', this)">
-              <i class="bi bi-brightness-high"></i> บ่าย (13:00 - 16:30)
-            </button>
-            <button type="button" class="time-preset-btn" onclick="applyTimePreset('08:30', '16:30', this)">
-              <i class="bi bi-calendar-range"></i> เต็มวัน (08:30 - 16:30)
-            </button>
-            <button type="button" class="time-preset-btn" onclick="applyTimeDuration(60, this)">
-              <i class="bi bi-stopwatch"></i> 1 ชม.
-            </button>
-            <button type="button" class="time-preset-btn" onclick="applyTimeDuration(120, this)">
-              <i class="bi bi-stopwatch"></i> 2 ชม.
-            </button>
-          </div>
-
-          <!-- Dropdown เลือกเวลาเริ่มต้น - สิ้นสุด ช่วงละ 30 นาที -->
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-            <div>
-              <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาเริ่มต้น</small>
-              <select id="bkStart" required onchange="onStartTimeChanged(); triggerAutoCheckAvailability();"></select>
-            </div>
-            <div>
-              <small style="color:var(--muted); font-weight:600; display:block; margin-bottom:4px;">เวลาสิ้นสุด</small>
-              <select id="bkEnd" required onchange="onEndTimeChanged(); triggerAutoCheckAvailability();"></select>
-            </div>
-          </div>
-
-          <!-- การ์ดแจ้งสถานะห้องว่างแบบ Real-time ทันที (Auto-check) -->
-          <div id="liveAvailStatusBox"></div>
-        </div>
-
+    <!-- Tab 5: Settings (ตั้งค่าระบบ) -->
+    <div class="tab-panel" id="admin-tab-settings">
+      <form id="adminSettingsForm" onsubmit="submitAdminSettings(event)" class="form-grid" style="max-width:760px;">
         <div class="form-group full">
-          <label>หัวข้อการประชุม / กิจกรรม <span class="req">*</span></label>
-          <input type="text" id="bkTopic" required placeholder="ระบุหัวข้อหรือชื่อการประชุม">
-        </div>
-
-        <div class="form-group">
-          <label>จำนวนผู้เข้าร่วม (คน) <span class="req">*</span></label>
-          <input type="number" id="bkParticipants" required min="1" value="10">
+          <label>ชื่อหน่วยงาน / องค์กร</label>
+          <input type="text" id="setOrgName" required>
         </div>
         <div class="form-group">
-          <label>รูปแบบการประชุม <span class="req">*</span></label>
-          <!-- ผูกการเปลี่ยนรูปแบบการประชุมเข้ากับผังโต๊ะเริ่มต้นอัตโนมัติ -->
-          <select id="bkMeetingType" required onchange="onMeetingTypeChanged()">
-            <option value="On-site">On-site (ประชุม ณ ห้องประชุม)</option>
-            <option value="Online">Online (ประชุมออนไลน์)</option>
-            <option value="Hybrid">Hybrid (ผสมผสาน On-site + Online)</option>
+          <label>เวลาเปิดให้เริ่มจอง</label>
+          <input type="time" id="setOpenHour" required>
+        </div>
+        <div class="form-group">
+          <label>เวลาสิ้นสุดให้จอง</label>
+          <input type="time" id="setCloseHour" required>
+        </div>
+        <div class="form-group">
+          <label>ระบบอนุมัติก่อนใช้งาน (Approval)</label>
+          <select id="setRequireApproval">
+            <option value="TRUE">เปิดใช้งาน (ต้องรออนุมัติ)</option>
+            <option value="FALSE">ปิดใช้งาน (อนุมัติทันที)</option>
           </select>
         </div>
-
-        <!-- ส่วนเลือกรูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม -->
-        <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:14px; margin-top:6px;">
-          <label style="display:flex; justify-content:space-between; align-items:center;">
-            <span><i class="bi bi-grid-3x3-gap"></i> รูปแบบการจัดโต๊ะเก้าอี้ห้องประชุม <span class="req">*</span></span>
-            <span style="font-size:12px; color:var(--muted); font-weight:normal;">(คลิกเลือกการ์ด หรือสลับดูแผนผัง/ภาพจริงได้)</span>
-          </label>
-          <input type="hidden" id="bkSeatingLayout" required value="แบบชั้นเรียน (Classroom)">
-          
-          <div class="layout-grid" id="bookingLayoutGrid">
-            <!-- JavaScript จะเรนเดอร์การ์ดรูปแบบโต๊ะเก้าอี้ให้อัตโนมัติ -->
-          </div>
+        <div class="form-group">
+          <label>ซิงค์ Google Calendar อัตโนมัติ</label>
+          <select id="setCalendarSync">
+            <option value="TRUE">เปิดใช้งาน</option>
+            <option value="FALSE">ปิดใช้งาน</option>
+          </select>
         </div>
-
-        <div class="form-group full" style="margin-top:6px;">
-          <label>อุปกรณ์ที่ต้องการเพิ่มเติม</label>
-          <input type="text" id="bkEquipment" placeholder="เช่น ไมโครโฟนตั้งโต๊ะ 6 ตัว, สายต่อ HDMI, กระดานฟลิปชาร์ท">
+        <div class="form-group">
+          <label>แจ้งเตือนผ่าน Google Chat Webhook</label>
+          <select id="setChatNotify">
+            <option value="TRUE">เปิดใช้งาน</option>
+            <option value="FALSE">ปิดใช้งาน</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>แจ้งเตือนทาง Email ก่อนประชุม 1 วัน</label>
+          <select id="setRemind1D">
+            <option value="TRUE">เปิดใช้งาน</option>
+            <option value="FALSE">ปิดใช้งาน</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>แจ้งเตือนทาง Email ก่อนประชุม 2 ชั่วโมง</label>
+          <select id="setRemind2H">
+            <option value="TRUE">เปิดใช้งาน</option>
+            <option value="FALSE">ปิดใช้งาน</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>แจ้งเตือนทาง Email ก่อนประชุม 30 นาที</label>
+          <select id="setRemind30M">
+            <option value="TRUE">เปิดใช้งาน</option>
+            <option value="FALSE">ปิดใช้งาน</option>
+          </select>
         </div>
         <div class="form-group full">
-          <label>รายละเอียดเพิ่มเติม / ข้อความถึงผู้ดูแล</label>
-          <textarea id="bkDetail" rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม เช่น การจัดเตรียมเครื่องดื่ม หรืออาหารว่าง (ถ้ามี)"></textarea>
+          <button type="submit" class="btn btn-primary" style="width:fit-content;">
+            <i class="bi bi-save"></i> บันทึกการตั้งค่าระบบ
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tab 6: Audit Log (ประวัติการใช้งานระบบ) -->
+    <div class="tab-panel" id="admin-tab-audit">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>วันเวลา</th><th>ผู้ดำเนินการ</th><th>สิทธิ์</th><th>กิจกรรม</th><th>เป้าหมาย</th><th>รายละเอียด</th>
+            </tr>
+          </thead>
+          <tbody id="adminAuditBody">
+            <tr><td colspan="6" style="text-align:center; color:var(--muted);">กำลังโหลดบันทึกการใช้งาน...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Room Modal (จัดการห้องประชุม + อัปโหลดรูป Google Drive + ตั้งค่ารูปแบบผังโต๊ะ) -->
+<div class="modal-backdrop" id="roomModal">
+  <div class="modal-box" style="max-width:700px;">
+    <div class="modal-header">
+      <h3 id="roomModalTitle"><i class="bi bi-building"></i> จัดการห้องประชุม</h3>
+      <button class="modal-close" onclick="closeModal('roomModal')">&times;</button>
+    </div>
+    <form id="roomForm" onsubmit="submitRoomForm(event)">
+      <div class="modal-body">
+        <input type="hidden" id="rmId">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>ชื่อห้องประชุม <span class="req">*</span></label>
+            <input type="text" id="rmName" required placeholder="เช่น ห้องประชุม 1">
+          </div>
+          <div class="form-group">
+            <label>อาคาร</label>
+            <input type="text" id="rmBuilding" placeholder="เช่น อาคารสำนักงานเทศบาล">
+          </div>
+          <div class="form-group">
+            <label>ชั้น</label>
+            <input type="text" id="rmFloor" placeholder="เช่น ชั้น 2">
+          </div>
+          <div class="form-group">
+            <label>ความจุสูงสุด (คน) <span class="req">*</span></label>
+            <input type="number" id="rmCapacity" min="1" required placeholder="30">
+          </div>
+          <div class="form-group">
+            <label>สถานะห้อง</label>
+            <select id="rmStatus">
+              <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
+              <option value="ปิดปรับปรุง">ปิดปรับปรุง</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ผู้รับผิดชอบดูแลห้อง</label>
+            <input type="text" id="rmResponsible" placeholder="เช่น ฝ่ายอำนวยการ สำนักปลัด">
+          </div>
+          <div class="form-group">
+            <label>สีประจำห้อง (แสดงในปฏิทิน)</label>
+            <input type="color" id="rmColor" value="#0284c7" style="height:42px; padding:4px;">
+          </div>
+          <div class="form-group full">
+            <label>อุปกรณ์อำนวยความสะดวกภายในห้อง</label>
+            <input type="text" id="rmEquipment" placeholder="เช่น โปรเจคเตอร์, ไมค์ 4 ตัว, Wi-Fi, จอ LED">
+          </div>
+          <div class="form-group full">
+            <label>รายละเอียดเพิ่มเติม</label>
+            <textarea id="rmDesc" rows="2" placeholder="ระบุวัตถุประสงค์การใช้งานที่เหมาะสม"></textarea>
+          </div>
+
+          <!-- รูปภาพห้องประชุม -->
+          <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:10px;">
+            <label><i class="bi bi-cloud-arrow-up"></i> อัปโหลดรูปภาพห้องประชุมขึ้น Google Drive (เลือกไฟล์จากเครื่อง)</label>
+            <input type="file" id="rmImageFile" accept="image/*" onchange="handleRoomImageSelect(event)">
+            <small style="color:var(--muted);">ระบบจะย่อขนาดและอัปโหลดเข้า Google Drive Folder อัตโนมัติ</small>
+          </div>
+          <div class="form-group full">
+            <label>หรือระบุลิงก์รูปภาพห้อง (Image URL)</label>
+            <input type="url" id="rmImageUrl" placeholder="https://..." oninput="updateRoomImagePreview(this.value)">
+          </div>
+          <div class="form-group full" id="rmPreviewWrap" style="display:none;">
+            <img id="rmPreviewImg" src="" alt="ตัวอย่างรูปห้องประชุม" style="width:100%; max-height:180px; object-fit:cover; border-radius:10px; border:1px solid var(--border);">
+          </div>
+
+          <!-- ตั้งค่ารูปแบบผังโต๊ะเก้าอี้ที่ห้องนี้รองรับ -->
+          <div class="form-group full" style="border-top:1px dashed var(--border); padding-top:10px;">
+            <label style="display:flex; align-items:center; justify-content:space-between;">
+              <span><i class="bi bi-grid-3x3-gap"></i> รูปแบบการจัดโต๊ะเก้าอี้ที่ห้องนี้รองรับ</span>
+              <span style="font-size:12px; color:var(--muted); font-weight:normal;">(เลือกได้หลายรูปแบบ)</span>
+            </label>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin-top:6px;">
+              <label style="display:flex; align-items:center; gap:8px; font-weight:normal; font-size:13px; background:#f8fafc; padding:8px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">
+                <input type="checkbox" name="roomLayouts" value="theater" checked style="width:auto;">
+                <span>แบบเธียเตอร์ (Theater)</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-weight:normal; font-size:13px; background:#f8fafc; padding:8px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">
+                <input type="checkbox" name="roomLayouts" value="classroom" checked style="width:auto;">
+                <span>แบบชั้นเรียน (Classroom)</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-weight:normal; font-size:13px; background:#f8fafc; padding:8px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">
+                <input type="checkbox" name="roomLayouts" value="ushape" checked style="width:auto;">
+                <span>แบบตัวยู (U-Shape)</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-weight:normal; font-size:13px; background:#f8fafc; padding:8px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">
+                <input type="checkbox" name="roomLayouts" value="boardroom" checked style="width:auto;">
+                <span>แบบโต๊ะประชุมกลาง (Boardroom)</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-weight:normal; font-size:13px; background:#f8fafc; padding:8px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer;">
+                <input type="checkbox" name="roomLayouts" value="banquet" checked style="width:auto;">
+                <span>แบบกลุ่มเวิร์กช็อป (Round Table)</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
-
-      <!-- กล่องสำรองข้อความผลการตรวจสอบห้องว่าง -->
-      <div id="availabilityCheckBox"></div>
-
-      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;">
-        <button type="submit" class="btn btn-primary" id="btnSubmitBooking" style="padding:11px 24px;">
-          <i class="bi bi-check2-circle"></i> ยืนยันการจองห้องประชุม
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" onclick="closeModal('roomModal')">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึกข้อมูลห้อง</button>
       </div>
     </form>
   </div>
-</section>
+</div>
 
-<!-- View: Rooms Directory (ทำเนียบข้อมูลห้องประชุมทั้งหมด) -->
-<section class="app-view" id="view-rooms">
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="bi bi-door-open"></i> ข้อมูลห้องประชุมทั้งหมด เทศบาลเมืองสมุทรสงคราม</div>
-    </div>
-    <div class="grid-3" id="roomsDirectoryGrid">
-      <div style="color:var(--muted); padding:10px 0;">กำลังโหลดข้อมูลห้องประชุม...</div>
-    </div>
-  </div>
-</section>
-
-<!-- View: My Bookings (รายการจองของฉัน) -->
-<section class="app-view" id="view-mybookings">
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><i class="bi bi-journal-check"></i> รายการจองของฉัน</div>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <input type="email" id="myBookingEmailInput" placeholder="ระบุอีเมลเพื่อค้นหา (กรณีไม่ได้เข้าสู่ระบบ)" style="width:260px;">
-        <button class="btn btn-primary btn-sm" onclick="loadMyBookings()">
-          <i class="bi bi-search"></i> ค้นหารายการจอง
-        </button>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>สถานะ</th><th>ดำเนินการ</th>
-          </tr>
-        </thead>
-        <tbody id="myBookingsBody">
-          <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:16px;">กรุณาเข้าสู่ระบบ หรือกรอกอีเมลเพื่อดูรายการจองของคุณ</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- Modal สำหรับขยายดูภาพแผนผัง & ภาพห้องตัวอย่างขนาดใหญ่ -->
-<div class="modal-backdrop" id="layoutPreviewModal">
-  <div class="modal-box" style="max-width:680px;">
+<!-- User Modal (จัดการบัญชีผู้ใช้งาน) -->
+<div class="modal-backdrop" id="userModal">
+  <div class="modal-box" style="max-width:480px;">
     <div class="modal-header">
-      <h3 id="layoutPreviewTitle"><i class="bi bi-grid-3x3-gap"></i> ตัวอย่างรูปแบบการจัดโต๊ะเก้าอี้</h3>
-      <button class="modal-close" onclick="closeModal('layoutPreviewModal')">&times;</button>
+      <h3 id="userModalTitle"><i class="bi bi-person-gear"></i> จัดการผู้ใช้งาน</h3>
+      <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
     </div>
-    <div class="modal-body" style="text-align:center;">
-      <div style="display:flex; justify-content:center; gap:10px; margin-bottom:14px;">
-        <button type="button" class="btn btn-primary btn-sm" id="btnShowPhoto" onclick="switchPreviewMode('photo')">
-          <i class="bi bi-camera"></i> ดูภาพห้องตัวอย่างจริง (Real Photo)
-        </button>
-        <button type="button" class="btn btn-outline btn-sm" id="btnShowDiagram" onclick="switchPreviewMode('diagram')">
-          <i class="bi bi-diagram-2"></i> ดูภาพแผนผัง (Layout Diagram)
-        </button>
+    <form id="userForm" onsubmit="submitUserForm(event)">
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>อีเมลผู้ใช้งาน <span class="req">*</span></label>
+          <input type="email" id="usrEmail" required placeholder="name@samutsongkhram.go.th">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>ชื่อ-นามสกุล <span class="req">*</span></label>
+          <input type="text" id="usrName" required placeholder="นาย/นาง/นางสาว...">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>หน่วยงาน (กอง/สำนัก)</label>
+          <select id="usrDept"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>สิทธิ์การใช้งาน (Role)</label>
+            <select id="usrRole">
+              <option value="User">User (ผู้จองทั่วไป)</option>
+              <option value="Approver">Approver (ผู้อนุมัติ)</option>
+              <option value="Admin">Admin (ผู้ดูแลระบบสูงสุด)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>สถานะบัญชี</label>
+            <select id="usrStatus">
+              <option value="Active">Active (เปิดใช้งาน)</option>
+              <option value="Inactive">Inactive (ระงับชั่วคราว)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label>กำหนดรหัส PIN / รหัสผ่านใหม่</label>
+          <input type="password" id="usrPasscode" placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน (ค่าเริ่มต้น: 123456)">
+        </div>
       </div>
-      <img id="layoutBigImage" src="" alt="ภาพตัวอย่างรูปแบบโต๊ะเก้าอี้" style="width:100%; max-height:380px; object-fit:contain; border-radius:10px; border:1px solid var(--border); background:#0f172a;">
-      <p id="layoutPreviewDesc" style="margin-top:12px; font-size:14px; color:var(--text); line-height:1.5;"></p>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-light" onclick="closeModal('layoutPreviewModal')">ปิดหน้าต่าง</button>
-    </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" onclick="closeModal('userModal')">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึกข้อมูลผู้ใช้</button>
+      </div>
+    </form>
   </div>
 </div>
