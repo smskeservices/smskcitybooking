@@ -1,0 +1,21 @@
+<!-- View: Approval Management (หน้าอนุมัติการจองสำหรับ Approver / Admin) -->
+<section class="app-view" id="view-approval">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-check2-square"></i> รายการรออนุมัติการใช้ห้องประชุม</div>
+      <button class="btn btn-outline btn-sm" onclick="loadApprovalViewData()"><i class="bi bi-arrow-clockwise"></i> รีเฟรชข้อมูล</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>รหัสจอง</th><th>วันที่ / เวลา</th><th>ห้องประชุม</th><th>หัวข้อการประชุม</th><th>ผู้จอง / หน่วยงาน</th><th>จำนวน</th><th>ดำเนินการพิจารณา</th>
+          </tr>
+        </thead>
+        <tbody id="standaloneApprovalBody">
+          <tr><td colspan="7" style="text-align:center; color:var(--muted); padding:20px;">กำลังโหลดรายการรออนุมัติ...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
