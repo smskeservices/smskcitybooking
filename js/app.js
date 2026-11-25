@@ -1622,16 +1622,16 @@ function downloadBookingPdf(bookingId) {
  * Calendar View
  * ======================================================================== */
 function loadCalendarEvents() {
-  var roomId = document.getElementById('calendarRoomFilter').value;
+  var filterEl = document.getElementById('calendarRoomFilter');
+  var roomId = filterEl ? filterEl.value : '';
   var legendEl = document.getElementById('calendarLegend');
   if (legendEl) {
-    var legendHtml = '';
-    STATE.rooms.forEach(function(r) {
-      legendHtml += '<span class="legend-item"><span class="legend-dot" style="background:' + escapeHtml(r.Color) + '"></span>' + escapeHtml(r.RoomName) + '</span>';
-    });
-    legendEl.innerHTML = legendHtml;
+    legendEl.innerHTML = STATE.rooms.map(function(r) {
+      return '<span class="legend-item"><span class="legend-dot" style="background:' + escapeHtml(r.Color) + '"></span>' + escapeHtml(r.RoomName) + '</span>';
+    }).join('');
   }
 
+  setLoading(true, 'กำลังโหลดตารางการใช้ห้องประชุม...');
   callGas('getCalendarBookings', roomId)
     .then(function(res) {
       var events = res.data || [];
@@ -1644,6 +1644,7 @@ function loadCalendarEvents() {
       STATE.calendarInstance = new FullCalendar.Calendar(el, {
         locale: 'th',
         initialView: window.innerWidth < 640 ? 'timeGridDay' : 'dayGridMonth',
+        height: 'auto',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
@@ -1653,12 +1654,24 @@ function loadCalendarEvents() {
         events: events,
         eventClick: function(info) {
           var p = info.event.extendedProps;
-          openBookingDetailModal(p.BookingID);
+          if (p && p.BookingID) {
+            openBookingDetailModal(p.BookingID);
+          }
         }
       });
       STATE.calendarInstance.render();
+
+      // ป้องกันปัญหาปฏิทินไม่ขยายเต็มพื้นที่เมื่อเปลี่ยนแท็บ
+      setTimeout(function() {
+        if (STATE.calendarInstance) STATE.calendarInstance.updateSize();
+      }, 120);
     })
-    .catch(function(err) { showToast(err.message, 'error'); });
+    .catch(function(err) {
+      showToast(err.message, 'error');
+    })
+    .finally(function() {
+      setLoading(false);
+    });
 }
 
 /* ==========================================================================
