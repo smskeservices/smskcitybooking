@@ -256,53 +256,45 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function bootstrapApp() {
-  setLoading(true, 'กำลังโหลดข้อมูลระบบ...');
-  return callGas('getInitialAppData', STATE.token)
-    .then(function(res) {
-      var data = res.data;
-      STATE.user = data.user;
-      STATE.settings = data.settings;
-      STATE.departments = data.departments || [];
-      STATE.rooms = data.rooms || [];
-      STATE.layouts = (data.layouts && data.layouts.length > 0) ? data.layouts : DEFAULT_LAYOUTS;
-      STATE.webAppUrl = data.webAppUrl || '';
+    setLoading(true, 'กำลังโหลดข้อมูลระบบ...');
+    return callGas('getInitialAppData', STATE.token)
+      .then(function(res) {
+        var data = res.data;
+        STATE.user = data.user;
+        STATE.settings = data.settings;
+        STATE.departments = data.departments || [];
+        STATE.rooms = data.rooms || [];
+        STATE.layouts = (data.layouts && data.layouts.length > 0) ? data.layouts : DEFAULT_LAYOUTS;
+        STATE.webAppUrl = data.webAppUrl || '';
 
-      var orgLabel = document.getElementById('orgNameLabel');
-      if (orgLabel) orgLabel.textContent = STATE.settings.ORG_NAME || 'เทศบาลเมืองสมุทรสงคราม';
+        var orgLabel = document.getElementById('orgNameLabel');
+        if (orgLabel) orgLabel.textContent = STATE.settings.ORG_NAME || 'เทศบาลเมืองสมุทรสงคราม';
 
-      populateDropdowns();
-      renderBookingLayoutCards();
-      updateAuthUI();
+        populateDropdowns();
+        renderBookingLayoutCards();
+        updateAuthUI();
 
-      var today = todayIso();
-      ['availCheckDate', 'bkDate'].forEach(function(id) {
-        var input = document.getElementById(id);
-        if (input) {
-          input.value = today;
-          input.min = today;
-        }
+        var today = todayIso();
+        ['availCheckDate', 'bkDate'].forEach(function(id) {
+          var input = document.getElementById(id);
+          if (input) { input.value = today; input.min = today; }
+        });
+
+        updateTimeSlotOptions();
+        
+        // 🔔 เริ่มต้นระบบแจ้งเตือน (Polling) ถ้า Admin/Approver เข้าใช้งาน
+        startNotificationPolling();
+
+        var targetView = (window.APP_BOOT && window.APP_BOOT.initialPage) ? window.APP_BOOT.initialPage : 'dashboard';
+        navigateTo(targetView);
+      })
+      .catch(function(err) {
+        Swal.fire({ icon: 'error', title: 'เชื่อมต่อระบบไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' });
+      })
+      .finally(function() {
+        setLoading(false);
       });
-
-      updateTimeSlotOptions();
-      checkAdminNotifications();
-
-      var targetView = (window.APP_BOOT && window.APP_BOOT.initialPage && document.getElementById('view-' + window.APP_BOOT.initialPage))
-        ? window.APP_BOOT.initialPage : 'dashboard';
-      navigateTo(targetView);
-    })
-    .catch(function(err) {
-      Swal.fire({
-        icon: 'error',
-        title: 'เชื่อมต่อระบบไม่สำเร็จ',
-        text: err.message,
-        confirmButtonColor: '#0f4c81',
-        confirmButtonText: 'ตกลง'
-      });
-    })
-    .finally(function() {
-      setLoading(false);
-    });
-}
+  }
 
 function checkAdminNotifications() {
   // 1. เช็กจำนวนการจองรออนุมัติ (Approver & Admin)
@@ -1009,33 +1001,37 @@ function updateAuthUI() {
 }
 
 function handleLogout() {
-  Swal.fire({
-    title: 'ต้องการออกจากระบบหรือไม่?',
-    text: 'คุณสามารถเข้าสู่ระบบใหม่ได้ตลอดเวลา',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#64748b',
-    confirmButtonText: '<i class="bi bi-box-arrow-right"></i> ออกจากระบบ',
-    cancelButtonText: 'ยกเลิก'
-  }).then(function(result) {
-    if (result.isConfirmed) {
-      setLoading(true, 'กำลังออกจากระบบ...');
-      callGas('logoutSession', STATE.token)
-        .catch(function() {})
-        .finally(function() {
-          sessionStorage.removeItem('MRB_AUTH_TOKEN');
-          localStorage.removeItem('MRB_AUTH_TOKEN');
-          STATE.token = '';
-          STATE.user = { authenticated: false, role: 'Guest', email: '', name: '', department: '', phone: '' };
-          updateAuthUI();
-          setLoading(false);
-          showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
-          navigateTo('dashboard');
-        });
-    }
-  });
-}
+    Swal.fire({
+      title: 'ออกจากระบบ?',
+      text: 'คุณต้องการออกจากระบบและล้างสถานะการเข้าใช้งานปัจจุบันใช่หรือไม่',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'ออกจากระบบ',
+      cancelButtonText: 'ยกเลิก'
+    }).then(function(result) {
+      if (result.isConfirmed) {
+        setLoading(true, 'กำลังออกจากระบบ...');
+        callGas('logoutSession', STATE.token)
+          .catch(function() {})
+          .finally(function() {
+            // ล้าง Token ออกจาก Session ทั้งหมด
+            sessionStorage.removeItem('MRB_AUTH_TOKEN');
+            localStorage.removeItem('MRB_AUTH_TOKEN');
+            STATE.token = '';
+            STATE.user = { authenticated: false, role: 'Guest', email: '', name: '', department: '', phone: '' };
+            
+            // ปิดระบบแจ้งเตือนและรีเซ็ตหน้าจอ
+            stopNotificationPolling();
+            updateAuthUI();
+            setLoading(false);
+            showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
+            navigateTo('dashboard');
+          });
+      }
+    });
+  }
 
 function switchAuthTab(mode) {
   var tabL = document.getElementById('authTabLogin');
@@ -1049,48 +1045,55 @@ function switchAuthTab(mode) {
 }
 
 function submitLogin(e) {
-  e.preventDefault();
-  setLoading(true, 'กำลังตรวจสอบสิทธิ์...');
-  var email = document.getElementById('loginEmail').value.trim();
-  var pass = document.getElementById('loginPass').value.trim();
+    e.preventDefault();
+    setLoading(true, 'กำลังตรวจสอบสิทธิ์...');
+    var email = document.getElementById('loginEmail').value.trim();
+    var pass = document.getElementById('loginPass').value.trim();
+    // ปิด Auto Login ข้ามวัน: ไม่รับค่า Remember Me (บังคับใช้ Session)
+    
+    var btn = document.getElementById('btnLoginSubmit');
+    if (btn) btn.disabled = true;
 
-  var btn = document.getElementById('btnLoginSubmit');
-  if (btn) btn.disabled = true;
+    callGas('loginWithCredentials', email, pass)
+      .then(function(res) {
+        STATE.token = res.data.token;
+        // บันทึกเฉพาะใน sessionStorage (ปิดหน้าต่าง/ปิดแท็บ = หลุดล็อกอิน)
+        sessionStorage.setItem('MRB_AUTH_TOKEN', STATE.token);
+        localStorage.removeItem('MRB_AUTH_TOKEN'); 
 
-  callGas('loginWithCredentials', email, pass)
-    .then(function(res) {
-      STATE.token = res.data.token;
-      sessionStorage.setItem('MRB_AUTH_TOKEN', STATE.token);
-      localStorage.removeItem('MRB_AUTH_TOKEN');
+        STATE.user = res.data.user;
+        closeModal('loginModal');
+        document.getElementById('loginForm').reset();
+        
+        updateAuthUI();
+        startNotificationPolling(); // เริ่มรัน polling ทันทีเมื่อ Login สำเร็จ
 
-      STATE.user = res.data.user;
-      closeModal('loginModal');
-      document.getElementById('loginForm').reset();
-      updateAuthUI();
-      checkAdminNotifications();
+        Swal.fire({
+          icon: 'success',
+          title: 'เข้าสู่ระบบสำเร็จ!',
+          text: 'ยินดีต้อนรับ ' + STATE.user.name,
+          confirmButtonColor: '#0f4c81',
+          timer: 2000,
+          timerProgressBar: true
+        });
 
-      Swal.fire({
-        icon: 'success',
-        title: 'เข้าสู่ระบบสำเร็จ!',
-        text: 'ยินดีต้อนรับ ' + STATE.user.name + ' (' + STATE.user.role + ')',
-        confirmButtonColor: '#0f4c81',
-        confirmButtonText: 'เข้าสู่หน้าหลัก',
-        timer: 2500,
-        timerProgressBar: true
+        if (document.getElementById('view-dashboard').classList.contains('active')) {
+          loadDashboard();
+        }
+      })
+      .catch(function(err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เข้าสู่ระบบไม่สำเร็จ',
+          text: err.message,
+          confirmButtonColor: '#0f4c81'
+        });
+      })
+      .finally(function() {
+        if (btn) btn.disabled = false;
+        setLoading(false);
       });
-
-      if (document.getElementById('view-dashboard').classList.contains('active')) {
-        loadDashboard();
-      }
-    })
-    .catch(function(err) {
-      Swal.fire({ icon: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', text: err.message, confirmButtonColor: '#0f4c81' });
-    })
-    .finally(function() {
-      if (btn) btn.disabled = false;
-      setLoading(false);
-    });
-}
+  }
 
 function submitRegister(e) {
   e.preventDefault();
@@ -2031,7 +2034,107 @@ function rejectBookingPrompt(bookingId) {
     }
   });
 }
+/* ==========================================================================
+ * Real-time Auto-Polling Notification Badges (อัปเดตตัวเลขโดยไม่ต้องรีเฟรช)
+ * ======================================================================== */
+var POLL_INTERVAL_MS = 30000; // เช็กอัตโนมัติทุก 30 วินาที
 
+function startNotificationPolling() {
+  stopNotificationPolling();
+  if (!STATE.user.authenticated || ['Admin', 'Approver'].indexOf(STATE.user.role) === -1) {
+    return;
+  }
+
+  // เช็กครั้งแรกเพื่อเก็บค่าตั้งต้น
+  fetchNotificationBadgesSilent(true);
+
+  STATE.pollTimer = setInterval(function() {
+    // ประหยัดโควตา: ทำงานเฉพาะตอนหน้าเว็บเปิดแสดงอยู่เท่านั้น
+    if (!document.hidden) {
+      fetchNotificationBadgesSilent(false);
+    }
+  }, POLL_INTERVAL_MS);
+}
+
+function stopNotificationPolling() {
+  if (STATE.pollTimer) {
+    clearInterval(STATE.pollTimer);
+    STATE.pollTimer = null;
+  }
+  STATE.lastBadgeBookings = null;
+  STATE.lastBadgeUsers = null;
+  document.title = 'ระบบจองห้องประชุมออนไลน์ | เทศบาลเมืองสมุทรสงคราม';
+}
+
+// เช็กทันทีเมื่อผู้ใช้สลับแท็บกลับมายังหน้าต่างระบบ
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && STATE.user.authenticated && ['Admin', 'Approver'].indexOf(STATE.user.role) !== -1) {
+    fetchNotificationBadgesSilent(false);
+  }
+});
+
+function fetchNotificationBadgesSilent(isInitial) {
+  if (!STATE.user.authenticated || ['Admin', 'Approver'].indexOf(STATE.user.role) === -1) return;
+
+  callGas('getNotificationBadges', STATE.token)
+    .then(function(res) {
+      var data = res.data || { pendingBookings: 0, pendingUsers: 0 };
+      var newBookings = Number(data.pendingBookings) || 0;
+      var newUsers = Number(data.pendingUsers) || 0;
+
+      // อัปเดตตัวเลข Badge บนเมนู Sidebar
+      updatePendingBadgeCount(newBookings);
+      if (STATE.user.role === 'Admin') {
+        updateAdminPendingBadge(newUsers);
+      }
+
+      // แสดงตัวเลขบนชื่อแท็บของ Browser
+      var totalAlert = newBookings + (STATE.user.role === 'Admin' ? newUsers : 0);
+      document.title = (totalAlert > 0 ? '(' + totalAlert + ') ' : '') + 'ระบบจองห้องประชุมออนไลน์ | เทศบาลเมืองสมุทรสงคราม';
+
+      // หากตัวเลขเพิ่มขึ้นจากรอบก่อน ให้แจ้งเตือน Toast และรีเฟรชตารางหน้าที่เปิดอยู่ให้อัตโนมัติ
+      if (!isInitial) {
+        if (STATE.lastBadgeBookings !== null && newBookings > STATE.lastBadgeBookings) {
+          var diffB = newBookings - STATE.lastBadgeBookings;
+          showToast('🔔 มีรายการจองห้องประชุมใหม่รออนุมัติ (+' + diffB + ' รายการ)', 'info');
+          refreshActiveAdminOrApprovalView();
+        }
+        if (STATE.user.role === 'Admin' && STATE.lastBadgeUsers !== null && newUsers > STATE.lastBadgeUsers) {
+          var diffU = newUsers - STATE.lastBadgeUsers;
+          showToast('👤 มีผู้ลงทะเบียนสมาชิกใหม่รออนุมัติ (+' + diffU + ' บัญชี)', 'warning');
+          refreshActiveUsersTab();
+        }
+      }
+
+      STATE.lastBadgeBookings = newBookings;
+      STATE.lastBadgeUsers = newUsers;
+    })
+    .catch(function() {
+      // ทำงานเงียบๆ เบื้องหลัง ไม่รบกวนผู้ใช้หากเน็ตสะดุดชั่วคราว
+    });
+}
+
+function refreshActiveAdminOrApprovalView() {
+  var approvalView = document.getElementById('view-approval');
+  var dashView = document.getElementById('view-dashboard');
+  var adminView = document.getElementById('view-admin');
+
+  if (approvalView && approvalView.classList.contains('active')) {
+    loadApprovalViewData();
+  } else if (dashView && dashView.classList.contains('active')) {
+    loadDashboard();
+  } else if (adminView && adminView.classList.contains('active')) {
+    loadAdminBookings();
+  }
+}
+
+function refreshActiveUsersTab() {
+  var usersPanel = document.getElementById('admin-tab-users');
+  var adminView = document.getElementById('view-admin');
+  if (adminView && adminView.classList.contains('active') && usersPanel && usersPanel.classList.contains('active')) {
+    loadAdminUsers();
+  }
+}
 function loadAdminRooms() {
   callGas('getRooms', true)
     .then(function(res) {
